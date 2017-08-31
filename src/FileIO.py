@@ -5,7 +5,7 @@ from warnings import warn
 from struct import unpack, pack
 from util import read_varlen, write_varlen
 from Constants import DEFAULT_MIDI_HEADER_SIZE
-from Containers import Track, Pattern, MidiEvent, SysexEvent, MetaEvent
+from Containers import Track, Pattern
 from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent
 
 
