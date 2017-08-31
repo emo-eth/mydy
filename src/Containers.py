@@ -1,3 +1,6 @@
+'''
+Container classes for MIDI Patterns and Tracks
+'''
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -40,43 +43,3 @@ class Pattern(object):
     def format(self, fmt):
         assert 0 <= fmt <= 2, "Format must be between 0 and 2, inclusive"
         return Pattern(fmt, self.num_tracks, self.division, tracks=[t.copy() for t in self.tracks])
-
-
-class AbstractEvent(object):
-
-    def __init__(self, time_delta, status, *data):
-        self.time_delta = time_delta
-        self.status = status
-        self.data = data or tuple()
-    
-    @property
-    @abstractmethod
-    def is_transposable(self):
-        return
-    
-    @property
-    @abstractmethod
-    def has_velocity(self):
-        return
-
-    def _body_repr(self):
-        data_repr = ' '.join(f'{x:08b}' for x in self.data)
-        head = f'td: {self.time_delta:08b} id: {self.status:08b}'
-        if data_repr:
-            return head + ' data: ' + data_repr
-        return head
-
-
-class MidiEvent(AbstractEvent):
-    def __repr__(self):
-        return f'<MidiEvent: {self._body_repr()}>'
-
-class SysexEvent(AbstractEvent):
-    def __repr__(self):
-        return f'<SysexEvent: {self._body_repr()}>'
-    pass
-
-class MetaEvent(AbstractEvent):
-    def __repr__(self):
-        return f'<MetaEvent: {self._body_repr()}>'
-
