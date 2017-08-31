@@ -1,34 +1,18 @@
+'''
+Classes for reading and writing MIDI files
+'''
 from warnings import warn
 from struct import unpack, pack
 from util import read_varlen, write_varlen
 from Constants import DEFAULT_MIDI_HEADER_SIZE
 from Containers import Track, Pattern, MidiEvent, SysexEvent, MetaEvent
-from itertools import cycle
-import numpy as np
-
+from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent
 
 
 class FileReader(object):
 
     CHUNK_SIZE = 4  # size of midi file or track header in bytes
     HEADER_SIZE = 10  # size of midi header contents in bytes
-    HAS_TWO_DATA_BYTES = {
-        0b1000: "Note Off",
-        0b1001: "Note On",
-        0b1010: "Polyphonic Key Pressure (Aftertouch)",
-        0b1011: "CC",
-        0b1110: "Pitch Wheel Change",
-        0b1011: "Channel Mode Messages",
-        0b11110010: "Song Position Pointer",
-
-    }
-
-    HAS_ONE_DATA_BYTE = {
-        0b1100: "Program Change",
-        0b1101: "Channel Pressure (Aftertouch)",
-        0b11110011: "Song Select"
-    }
-
 
     def read(self, buffer):
         '''Read a midi file from a buffer'''
@@ -54,7 +38,7 @@ class FileReader(object):
         division = self.parse_division(data[3])
         # assume any remaining bytes in header are padding
         if header_size > DEFAULT_MIDI_HEADER_SIZE:
-            print('>>' + str(buffer.read(header_size - DEFAULT_MIDI_HEADER_SIZE)))
+            buffer.read(header_size - DEFAULT_MIDI_HEADER_SIZE)
         return Pattern(fmt, num_tracks, division)
 
 
@@ -69,7 +53,8 @@ class FileReader(object):
 
 
     def parse_track(self, buffer):
-        '''Parse a MIDI track into a tuple'''
+        '''Parse a MIDI track into a tuple of events'''
+        self.running_status = None
         track_size = self.parse_track_header(buffer)
         track_data = iter(buffer.read(track_size))
         events = []
@@ -79,12 +64,6 @@ class FileReader(object):
                 events.append(event)
             except StopIteration:
                 break
-        # print length in bytes
-        s = 0
-        for ev in events:
-            s += 2 + len(ev.data)
-        print(s)
-        print(events)
         return tuple(events)
 
 
@@ -95,64 +74,69 @@ class FileReader(object):
         if header != b'MTrk':
             raise TypeError("Bad track header in midi file: " + str(header))
         track_size = unpack('>L', buffer.read(4))[0]
-        print(track_size)
         return track_size
 
     def parse_event(self, track_iter):
         '''Parses an event from a byte iterator.
-        Returns a MidiEvent, SysexEvent, or MetaEvent'''
-        delta_time = read_varlen(track_iter)
+        Returns a MidiEvent, SysexEvent, or MetaEvent, or subclass thereof'''
+        tick = read_varlen(track_iter)
         header_byte = next(track_iter)
-        if header_byte == 0xF0 or header_byte == 0xF7:
-            return SysexEvent(delta_time,
-                              *self.parse_sysex_event(header_byte, track_iter))
-        elif header_byte == 0xFF:
-            return MetaEvent(delta_time, *self.parse_meta_event(header_byte, track_iter))
-        return MidiEvent(delta_time, *self.parse_midi_event(header_byte, track_iter))
+        if SysexEvent.is_event(header_byte):
+            return self.parse_sysex_event(tick, track_iter)
+        elif MetaEvent.is_event(header_byte):
+            return self.parse_meta_event(tick, track_iter)
+        return self.parse_midi_event(tick, header_byte, track_iter)
         
 
-    def parse_sysex_event(header_byte, track_data):
-        length = read_varlen(track_data)
-        payload = [next(track_data) for _ in range(length)]
+    def parse_sysex_event(tick, track_iter):
+        '''
+        Return a SysexEvent object given a tick and track_iter byte iterator
+        '''
         payload = []
-        byte = next(track_data)
+        byte = next(track_iter)
+        # 0xF7 signals end of Sysex data stream
         while byte != 0xF7:
-            # TODO: remember to write this out ^
-            # TODO: write comments that make sense in the future
             payload.append(byte)
-            byte = next(track_data)
-        return [header_byte, length] + payload
-        # return [bytes([header_byte]) + write_varlen(length) + payload, None, None]
+            byte = next(track_iter)
+        return SysexEvent(tick=tick, data=payload)
 
 
-    def parse_meta_event(self, header_byte, track_data):
-        type_ = next(track_data)
-        length = read_varlen(track_data)
-        payload = [next(track_data) for _ in range(length)]
-        return [header_byte, type_, length] + payload
-        # return [bytes([header_byte, type_]) + write_varlen(length) + payload, None, None]
-
-
-    def parse_midi_event(self, status, track_data):
-        num_bytes = self.num_payload_bytes(status)
-        payload = []
-        for _ in range(num_bytes):
-            payload.append(next(track_data))
-        return [status] + payload
-
-
-    def num_payload_bytes(self, status):
-        # print(f'{status:08b}')
-        half_byte = status >> 4
-        # check if system message, need full byte
-        if half_byte == 0b1001:
-            print('on!!!')
-        if half_byte == 0b1111:
-            code = status
+    def parse_meta_event(self, tick, track_iter):
+        '''
+        Parse and return a MetaEvent subclass from a byte iterator
+        '''
+        metacommand = next(track_iter)
+        if metacommand not in EventRegistry.MetaEvents:
+            warn('Unknown Meta MIDI Event: ' + str(metacommand), Warning)
+            cls = UnknownMetaEvent
         else:
-            code = half_byte
-        if code in self.HAS_TWO_DATA_BYTES:
-            return 2
-        elif code in self.HAS_ONE_DATA_BYTE:
-            return 1
-        return 0
+            cls = EventRegistry.MetaEvents[metacommand]
+        length = read_varlen(track_iter)
+        data = [next(track_iter) for x in range(length)]
+        return cls(tick=tick, data=data, metacommand=metacommand)
+        
+
+
+    def parse_midi_event(self, tick, header_byte, track_iter):
+        '''
+        Parse and return a standard MIDI event
+        '''
+        key = header_byte & 0xF0
+        # if this key isn't an event, it's data for an event of
+        # the same time we just parsed
+        if key not in EventRegistry.Events:
+            assert self.running_status, 'Bad byte value'
+            data = []
+            key = self.running_status & 0xF0
+            cls = EventRegistry.Events[key]
+            channel = self.running_status & 0xF
+            data.append(header_byte)
+            data += [next(track_iter) for x in range(cls.length - 1)]
+            return cls(tick=tick, channel=channel, data=data)
+        else:
+            self.running_status = header_byte
+            cls = EventRegistry.Events[key]
+            channel = self.running_status & 0xF
+            data = [next(track_iter) for x in range(cls.length)]
+            return cls(tick=tick, channel=channel, data=data)
+        raise Warning("Uknown midi event: " + str(header_byte))
