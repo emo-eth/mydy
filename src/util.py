@@ -3,7 +3,7 @@ from collections import deque
 def read_varlen(byte_iter):
     '''Reads a variable length quantity from an iterator'''
     byte = next(byte_iter)
-    if not byte & 0x80:
+    if not _has_next_byte(byte):
         return byte
     value = _remove_flag(byte)
     while _has_next_byte(byte):
@@ -15,10 +15,10 @@ def read_varlen(byte_iter):
 def write_varlen(value):
     '''Translates a value to a max-4-byte variable length quantity'''
     chrs = deque()
-    chrs.appendleft(bytes([value & 0x7F]))
+    chrs.appendleft(bytes([_7_bit_mask(value)]))
     value >>= 7
-    while value and len(chrs) < 4:
-        chrs.appendleft(bytes([_flag_next_byte(value & 0x7F)]))
+    while value:
+        chrs.appendleft(bytes([_flag_next_byte(_7_bit_mask(value))]))
         value >>= 7
     return b''.join(chrs)
 
@@ -33,3 +33,6 @@ def _flag_next_byte(byte):
 def _remove_flag(byte):
     '''Extract value from byte by masking last 7 bits'''
     return byte & 0x7f
+
+# alias
+_7_bit_mask = _remove_flag

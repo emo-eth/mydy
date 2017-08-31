@@ -16,4 +16,5 @@ class TestUtil(unittest.TestCase):
 class TestFileIO(unittest.TestCase):
     def test_splode(self):
         with open('mary.mid', 'rb') as f:
-            FileIO.read(f)
+            io = FileIO.FileReader()
+            io.read(f)
