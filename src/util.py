@@ -1,3 +1,6 @@
+'''
+Utils for reading and writing variable-length-quantities
+'''
 from collections import deque
 
 def read_varlen(byte_iter):
@@ -13,7 +16,8 @@ def read_varlen(byte_iter):
     return value
 
 def write_varlen(value):
-    '''Translates a value to a max-4-byte variable length quantity'''
+    '''Translates a value to bytes in the variable length format'''
+    # deques let us appendleft at no cost
     chrs = deque()
     chrs.appendleft(bytes([_7_bit_mask(value)]))
     value >>= 7
@@ -23,7 +27,7 @@ def write_varlen(value):
     return b''.join(chrs)
 
 def _has_next_byte(byte):
-    '''Determine if stream has a next byte by checking the MSB'''
+    '''Determine if stream has a next byte by checking the most significant bit (MSB)'''
     return byte & 0x80
 
 def _flag_next_byte(byte):

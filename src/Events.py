@@ -2,7 +2,6 @@
 A collection of MIDI events
 '''
 import math
-from six import with_metaclass
 
 
 class EventRegistry(object):
