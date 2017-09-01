@@ -16,8 +16,6 @@ class EventRegistry(object):
         '''
         Add a class to the static Events or MetaEvents dictionaries
         '''
-        print(Event in bases, MetaEvent in bases)
-
         if (Event in bases) or (NoteEvent in bases):
             assert event.status not in cls.Events, \
                 "Event %s already registered" % event.name

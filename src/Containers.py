@@ -1,45 +1,73 @@
 '''
 Container classes for MIDI Patterns and Tracks
 '''
-from abc import ABC, abstractmethod
-import numpy as np
+from pprint import pformat, pprint
 
 
-class Track(object):
-    pass
+class Track(list):
+    def __init__(self, events=[], relative=True):
+        self.relative = relative
+        super(Track, self).__init__(events)
 
+    def make_ticks_abs(self):
+        if (self.relative):
+            self.relative = False
+            running_tick = 0
+            for event in self:
+                event.tick += running_tick
+                running_tick = event.tick
 
-class Pattern(object):
-    def __init__(self, fmt, num_tracks, division, tracks=None):
-        assert (tracks is None or len(tracks) == num_tracks,
-                "num_tracks and tracks do not match")
-        assert ((fmt == 0 and num_tracks <= 1) or (num_tracks >= 1))
-        self.division = division
-        self._format = fmt
-        self.num_tracks = num_tracks
-        if not tracks and num_tracks:
-            self._tracks = np.array([np.array([]) for _ in range(num_tracks)])
+    def make_ticks_rel(self):
+        if (not self.relative):
+            self.relative = True
+            running_tick = 0
+            for event in self:
+                event.tick -= running_tick
+                running_tick += event.tick
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            indices = item.indices(len(self))
+            return Track((super(Track, self).__getitem__(i) for i in range(*indices)))
         else:
-            self._tracks = np.array([t.copy() for t in tracks])
+            return super(Track, self).__getitem__(item)
 
-    @property
-    def tracks(self):
-        return self._tracks
+    def __getslice__(self, i, j):
+        # The deprecated __getslice__ is still called when subclassing built-in types
+        # for calls of the form List[i:j]
+        return self.__getitem__(slice(i,j))
 
-    @tracks.setter
-    def tracks(self, tracks):
-        return Pattern(self.format, self.num_tracks, self.division, tracks=[t.copy() for t in tracks])
+    def __repr__(self):
+        return "midi.Track(\\\n  %s)" % (pformat(list(self)).replace('\n', '\n  '), )
 
-    def add_track(self, track, fmt=1):
-        if self.format != 0:
-            fmt = self.format
-        return Pattern(fmt, self.num_tracks + 1, self.division, tracks=[t.copy() for t in self.tracks] + [track.copy()])
 
-    @property
-    def format(self):
-        return self._format
 
-    @format.setter
-    def format(self, fmt):
-        assert 0 <= fmt <= 2, "Format must be between 0 and 2, inclusive"
-        return Pattern(fmt, self.num_tracks, self.division, tracks=[t.copy() for t in self.tracks])
+class Pattern(list):
+    def __init__(self, tracks=[], resolution=220, fmt=1, relative=True):
+        assert ((fmt == 0 and len(tracks) <= 1) or (len(tracks) >= 1))
+        self.format = fmt
+        self.resolution = resolution
+        self.relative_tick = relative
+        super(Pattern, self).__init__(tracks)
+
+    # @property
+    # def tracks(self):
+    #     return self._tracks
+
+    # @tracks.setter
+    # def tracks(self, tracks):
+    #     return Pattern(self.format, self.num_tracks, self.resolution, tracks=[t.copy() for t in tracks])
+
+    # def add_track(self, track, fmt=1):
+    #     if self.format != 0:
+    #         fmt = self.format
+    #     return Pattern(fmt, self.num_tracks + 1, self.resolution, tracks=[t.copy() for t in self.tracks] + [track.copy()])
+
+    # @property
+    # def format(self):
+    #     return self.format
+
+    # @format.setter
+    # def format(self, fmt):
+    #     assert 0 <= fmt <= 2, "Format must be between 0 and 2, inclusive"
+    #     return Pattern(fmt, self.num_tracks, self.resolution, tracks=[t.copy() for t in self.tracks])

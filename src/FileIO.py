@@ -6,7 +6,7 @@ from struct import unpack, pack
 from util import read_varlen, write_varlen
 from Constants import DEFAULT_MIDI_HEADER_SIZE
 from Containers import Track, Pattern
-from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent
+from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent, Event
 
 
 class FileReader(object):
@@ -15,41 +15,45 @@ class FileReader(object):
     HEADER_SIZE = 10  # size of midi header contents in bytes
 
     def read(self, buffer):
-        '''Read a midi file from a buffer'''
-        print(type(buffer))
+        '''
+        Read a midi file from a buffer and return a Pattern object
+        '''
         pattern = self.parse_file_header(buffer)
-        for track in pattern.tracks:
-            self.parse_track(buffer)
+        for track in pattern:
+            track += self.parse_track(buffer)
         return pattern
 
 
     def parse_file_header(self, buffer):
-        '''Parse header information from a buffer and return a Pattern based on
-        that information.'''
+        '''
+        Parse header information from a buffer and return a Pattern based on that information.
+        '''
         header = buffer.read(self.CHUNK_SIZE)
         if header != b'MThd':
             raise TypeError("Bad header in MIDI file")
         # a long followed by three shorts
         data = unpack(">LHHH", buffer.read(self.HEADER_SIZE))
-        print(data)
         header_size = data[0]
         fmt = data[1]
         num_tracks = data[2]
-        division = self.parse_division(data[3])
+        resolution = self.parse_resolution(data[3])
         # assume any remaining bytes in header are padding
         if header_size > DEFAULT_MIDI_HEADER_SIZE:
             buffer.read(header_size - DEFAULT_MIDI_HEADER_SIZE)
-        return Pattern(fmt, num_tracks, division)
+        tracks = [Track() for _ in range(num_tracks)]
+        return Pattern(tracks=tracks, resolution=resolution, fmt=fmt)
 
 
-    def parse_division(self, division):
-        '''Parse division information in MIDI header, either ticks per quarter note
-        or SMPTE information'''
-        if division & 0x80000:
-            smpte = (division >> 7) | 0x7f
-            ticks_per_frame = division | 0x7f
+    def parse_resolution(self, resolution):
+        '''
+        Parse resolution information in MIDI header, either ticks per quarter note
+        or SMPTE information
+        '''
+        if resolution & 0x80000:
+            smpte = (resolution >> 7) | 0x7f
+            ticks_per_frame = resolution | 0x7f
             return (smpte, ticks_per_frame)
-        return (division,)
+        return (resolution,)
 
 
     def parse_track(self, buffer):
@@ -140,3 +144,71 @@ class FileReader(object):
             data = [next(track_iter) for x in range(cls.length)]
             return cls(tick=tick, channel=channel, data=data)
         raise Warning("Uknown midi event: " + str(header_byte))
+
+class FileWriter(object):
+    def write(self, midifile, pattern):
+        print(pattern)
+        self.write_file_header(midifile, pattern)
+        for track in pattern:
+            self.write_track(midifile, track)
+
+    def write_file_header(self, midifile, pattern):
+        # First four bytes are MIDI header
+        # TODO: fix resolution shit
+        packdata = pack(">LHHH", 6,    
+                        pattern.format, 
+                        len(pattern),
+                        pattern.resolution[0])
+        midifile.write(b'MThd%s' % packdata)
+            
+    def write_track(self, midifile, track):
+        buf = b''
+        self.running_status = None
+        for event in track:
+            ev = self.encode_event(event)
+            print(ev)
+            buf += ev
+        buf = self.encode_track_header(len(buf)) + buf
+        print(b'~~~' + buf)
+        midifile.write(buf)
+
+    def encode_track_header(self, trklen):
+        print(b'MTrk%s' % pack(">L", trklen))
+        return b'MTrk%s' % pack(">L", trklen)
+
+    def encode_event(self, event):
+        ret = b''
+        ret += write_varlen(event.tick)
+        # is the event a MetaEvent?
+        if isinstance(event, MetaEvent):
+            ret += bytes([event.status]) + bytes([event.metacommand])
+            ret += write_varlen(len(event.data))
+            ret += b''.join(map(lambda x: bytes([x]), event.data))
+        # is this event a Sysex Event?
+        elif isinstance(event, SysexEvent):
+            ret += bytes([0xF0])
+            ret += b''.join(map(lambda x: bytes([x]), event.data))
+            ret += bytes([0xF7])
+        # not a Meta MIDI event or a Sysex event, must be a general message
+        elif isinstance(event, Event):
+            if not self.running_status or \
+                self.running_status.status != event.status or \
+                self.running_status.channel != event.channel:
+                    self.running_status = event
+                    ret += bytes([event.status | event.channel])
+            ret += b''.join(map(lambda x: bytes([x]), event.data))
+        else:
+            raise ValueError("Unknown MIDI Event: " + str(event))
+        return ret
+
+def write_midifile(midifile, pattern):
+    if isinstance(midifile, str):
+        midifile = open(midifile, 'wb')
+    writer = FileWriter()
+    return writer.write(midifile, pattern)
+
+def read_midifile(midifile):
+    if isinstance(midifile, str):
+        midifile = open(midifile, 'rb')
+    reader = FileReader()
+    return reader.read(midifile)

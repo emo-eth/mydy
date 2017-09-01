@@ -18,3 +18,9 @@ class TestFileIO(unittest.TestCase):
         with open('mary.mid', 'rb') as f:
             io = FileIO.FileReader()
             io.read(f)
+    
+    def test_write_read(self):
+        read = FileIO.read_midifile('mary.mid')
+        self.assertTrue(len(read[0]) > 0)
+        FileIO.write_midifile('test.mid', read)
+        self.assertEqual(read, FileIO.read_midifile('test.mid'))
