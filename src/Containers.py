@@ -2,21 +2,14 @@
 Container classes for MIDI Patterns and Tracks
 '''
 from pprint import pformat, pprint
-<<<<<<< HEAD
 from .Constants import MAX_TICK_RESOLUTION
-=======
-from Constants import MAX_TICK_RESOLUTION
->>>>>>> origin/master
 
 
 class Track(list):
     '''
     Track class to hold midi events within a pattern.
     '''
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/master
     def __init__(self, events=[], relative=True):
         '''
         Params:
@@ -65,96 +58,61 @@ class Track(list):
         elif isinstance(o, Track):
             return self + o.copy()
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-    
->>>>>>> origin/master
     def __sub__(self, o):
         if isinstance(o, int):
             return self + (-o)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-    
->>>>>>> origin/master
     def __rshift__(self, o):
         if isinstance(o, int):
             return Track(map(lambda x: x >> o, self), self.relative)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
->>>>>>> origin/master
 
     def __lshift__(self, o):
         if isinstance(o, int):
             return self >> (-o)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-    
->>>>>>> origin/master
     def __mul__(self, o):
         if o <= 0:
             raise TypeError(f"multiplication factor must be greater than zero")
         elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
             return Track(map(lambda x: x * o, self), self.relative)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-    
->>>>>>> origin/master
     def __truediv__(self, o):
         if o <= 0:
             raise TypeError(f"multiplication factor must be greater than zero")
         elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
             return self * (1 / o)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
->>>>>>> origin/master
 
 
 class Pattern(list):
     '''
     Pattern class to hold midi tracks
     '''
-<<<<<<< HEAD
 
-=======
->>>>>>> origin/master
     def __init__(self, tracks=[], resolution=220, fmt=1, relative=True):
         self.format = fmt
         self._resolution = resolution
         self.relative = relative
         super(Pattern, self).__init__(tracks)
         assert ((fmt == 0 and len(self) <= 1) or (len(self) >= 1))
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> origin/master
     @property
     def resolution(self):
         return self._resolution
@@ -167,11 +125,7 @@ class Pattern(list):
             for event in track:
                 event.tick *= coeff
         self._resolution = val
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> origin/master
     def copy(self):
         # TODO: add kwarg support?
         return Pattern((track.copy() for track in self), self.resolution, self.format, self.relative)
@@ -181,68 +135,41 @@ class Pattern(list):
                 and self.resolution == o.resolution
                 and self.format == o.format
                 and self.relative == o.relative)
-<<<<<<< HEAD
 
     def __add__(self, o):
         if isinstance(o, int):
             return Pattern(map(lambda x: x + o, self), self.resolution,
                            self.format, self.relative)
-=======
-    
-    def __add__(self, o):
-        if isinstance(o, int):
-            return Pattern(map(lambda x: x + o, self), self.resolution,
-                                  self.format, self.relative)
->>>>>>> origin/master
         elif isinstance(o, Pattern):
             return self + o.copy()
         elif isinstance(o, Track):
             return self.copy().append(o.copy())
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-    
->>>>>>> origin/master
     def __sub__(self, o):
         if isinstance(o, int):
             return self + (-o)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-    
->>>>>>> origin/master
     def __rshift__(self, o):
         if isinstance(o, int):
             return Pattern(map(lambda x: x >> o, self), self.resolution,
                            self.format, self.relative)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
->>>>>>> origin/master
 
     def __lshift__(self, o):
         if isinstance(o, int):
             return self >> (-o)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-    
->>>>>>> origin/master
     def __mul__(self, o):
         if o <= 0:
             raise TypeError(f"multiplication factor must be greater than zero")
@@ -250,12 +177,8 @@ class Pattern(list):
             return Pattern(map(lambda x: x * o, self), self.resolution,
                            self.format, self.relative)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
->>>>>>> origin/master
 
     def __truediv__(self, o):
         if o <= 0:
@@ -263,12 +186,8 @@ class Pattern(list):
         elif (isinstance(o, int) or isinstance(o, float)):
             return self * (1 / o)
         else:
-<<<<<<< HEAD
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
-=======
-            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
->>>>>>> origin/master
 
     def __getitem__(self, item):
         if isinstance(item, slice):

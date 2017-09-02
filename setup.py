@@ -6,24 +6,27 @@ from setuptools import setup, Extension
 import setuptools.command.install
 
 __base__ = {
-    'name':'mydy', 
-    'version':'v0.0.1',
-    'description':'Vectorized Python MIDI IO',
-    'author':'James Wenzel',
-    'author_email':'jameswenzel@berkeley.edu',
-    'package_dir':{'mydy':'src'},
-    'py_modules':['mydy.Containers', 'mydy.__init__', 'mydy.Events', 'mydy.Util', 'mydy.FileIO', 'mydy.Constants'],
-    'ext_modules':[],
-    'ext_package':'',
-    'scripts':['scripts/mididump.py', 'scripts/mididumphw.py', 'scripts/midiplay.py'],
+    'name': 'mydy',
+    'version': 'v0.0.1',
+    'description': 'Vectorized Python MIDI IO',
+    'author': 'James Wenzel',
+    'author_email': 'jameswenzel@berkeley.edu',
+    'package_dir': {'mydy': 'src'},
+    'py_modules': ['mydy.Containers', 'mydy.__init__', 'mydy.Events', 'mydy.Util', 'mydy.FileIO', 'mydy.Constants'],
+    'ext_modules': [],
+    'ext_package': '',
+    'scripts': ['scripts/mididump.py', 'scripts/mididumphw.py', 'scripts/midiplay.py'],
 }
 
 # this kludge ensures we run the build_ext first before anything else
 # otherwise, we will be missing generated files during the copy
+
+
 class Install_Command_build_ext_first(setuptools.command.install.install):
     def run(self):
         self.run_command("build_ext")
         return setuptools.command.install.install.run(self)
+
 
 def setup_alsa(ns):
     # scan for alsa include directory
@@ -55,6 +58,7 @@ def setup_alsa(ns):
     ns['ext_package'] = 'mydy.sequencer'
     ns['cmdclass'] = {'install': Install_Command_build_ext_first}
 
+
 def configure_platform():
     from sys import platform
     ns = __base__.copy()
@@ -65,7 +69,6 @@ def configure_platform():
         print("No sequencer available for '%s' platform." % platform)
     return ns
 
+
 if __name__ == "__main__":
     setup(**configure_platform())
-
-
