@@ -1,9 +1,13 @@
+'''
+Tests for MIDI modules
+'''
 import unittest
 import random
 import util
 import math
 import FileIO
 import Events
+from Constants import MAX_TICK_RESOLUTION
 from itertools import chain
 
 class TestUtil(unittest.TestCase):
@@ -15,19 +19,25 @@ class TestUtil(unittest.TestCase):
 class TestFileIO(unittest.TestCase):
 
     def test_write_read(self):
+        '''Test that write and read are inverses of each other'''
         read = FileIO.read_midifile('mary.mid')
         self.assertTrue(len(read[0]) > 0)
         FileIO.write_midifile('test.mid', read)
         self.assertEqual(read, FileIO.read_midifile('test.mid'))
+        read2 = read * (2 / 3)
+        FileIO.write_midifile('test.mid', read2)
+
 
 class TestEvents(unittest.TestCase):
     
-    def test_construction(self):
+    def test_constructors(self):
+        '''Test all constructors behave as expected'''
         for _, cls in chain(Events.EventRegistry.Events.items(),
                             Events.EventRegistry.MetaEvents.items()):
             cls(metacommand=1, tick=1, data=[1])
     
     def test_add_event(self):
+        '''Test that events support integer addition'''
         pattern = FileIO.read_midifile('mary.mid')
         event = pattern[1][5]
         event2 = event + 1
@@ -37,6 +47,7 @@ class TestEvents(unittest.TestCase):
         self.assertEqual(event, event3)
 
     def test_shift_event(self):
+        '''Test that events support integer shift operations'''
         pattern = FileIO.read_midifile('mary.mid')
         event = pattern[1][5]
         event2 = event >> 1
@@ -46,6 +57,7 @@ class TestEvents(unittest.TestCase):
         self.assertEqual(event, event3)
 
     def test_mul_event(self):
+        '''Test that events support integer and float multiplication'''
         pattern = FileIO.read_midifile('mary.mid')
         event = pattern[1][20]
         event * 1  # test ints are valid too
@@ -105,6 +117,8 @@ class TestPattern(unittest.TestCase):
         self.assertNotEqual(pattern1, pattern2)
         pattern3 = pattern2 << 1
         self.assertEqual(pattern1, pattern3)
+        pattern1 >> 200
+        math.ceil
 
     def test_mul_pattern(self):
         pattern1 = FileIO.read_midifile('mary.mid')
@@ -117,4 +131,14 @@ class TestPattern(unittest.TestCase):
             for event in track:
                 event.tick = int(event.tick)
         self.assertEqual(pattern1, pattern3)
-
+    
+    def test_mul_symmetry(self):
+        orig = FileIO.read_midifile('mary.mid')
+        orig *= 1.1
+        FileIO.write_midifile('test.mid', orig)
+        orig.resolution = MAX_TICK_RESOLUTION
+        for track in orig:
+            for event in track:
+                event.tick = int(event.tick + .5)
+        read = FileIO.read_midifile('test.mid')
+        self.assertEqual(orig, read)

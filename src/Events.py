@@ -1,5 +1,6 @@
 '''
 A collection of MIDI events
+
 '''
 import math
 
@@ -154,6 +155,19 @@ class Event(AbstractEvent):
     def __init__(self, channel=0, tick=0, data=[], **kw):
         super(Event, self).__init__(tick, data)
         self.channel = channel
+    
+    def _truncate(self):
+        '''Quantize data bytes to 7-bit values'''
+        def quantize(x):
+            if 0 <= x <= 127:
+                return x
+            elif 0 > x:
+                return 0
+            else:
+                return 127
+        new = self.copy()
+        new.data = list(map(quantize, self.data))
+        return new
 
     def copy(self, **kw):
         _kw = {'channel': self.channel, 'tick': self.tick, 'data': self.data.copy()}
@@ -387,6 +401,7 @@ class MetaEventWithText(MetaEvent):
 
     @text.setter
     def text(self, text):
+        # TODO: how will actual bytes affect the output?
         self.data = bytearray(ord(c) for c in text)
         self._text = None
 

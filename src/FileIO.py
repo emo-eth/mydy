@@ -1,19 +1,16 @@
 '''
 Classes for reading and writing MIDI files
+
 '''
 from warnings import warn
 from struct import unpack, pack
 from util import read_varlen, write_varlen
-from Constants import DEFAULT_MIDI_HEADER_SIZE
+from Constants import DEFAULT_MIDI_HEADER_SIZE, CHUNK_SIZE, HEADER_SIZE, MAX_TICK_RESOLUTION
 from Containers import Track, Pattern
 from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent, Event
 
 
 class FileReader(object):
-
-    # TODO: move these to constants
-    CHUNK_SIZE = 4  # size of midi file or track header in bytes
-    HEADER_SIZE = 10  # size of midi header contents in bytes
 
     def read(self, buffer):
         '''
@@ -29,15 +26,15 @@ class FileReader(object):
         '''
         Parse header information from a buffer and return a Pattern based on that information.
         '''
-        header = buffer.read(self.CHUNK_SIZE)
+        header = buffer.read(CHUNK_SIZE)
         if header != b'MThd':
             raise TypeError("Bad header in MIDI file")
         # a long followed by three shorts
-        data = unpack(">LHHH", buffer.read(self.HEADER_SIZE))
+        data = unpack(">LHHH", buffer.read(HEADER_SIZE))
         header_size = data[0]
         fmt = data[1]
         num_tracks = data[2]
-        resolution = data[3]
+        resolution = data[3]  # TODO: allow parsing of SMPTE information
         # assume any remaining bytes in header are padding
         if header_size > DEFAULT_MIDI_HEADER_SIZE:
             buffer.read(header_size - DEFAULT_MIDI_HEADER_SIZE)
@@ -63,7 +60,7 @@ class FileReader(object):
     def parse_track_header(self, buffer):
         '''Parse track information from header
         Return track size in bytes'''
-        header = buffer.read(self.CHUNK_SIZE)
+        header = buffer.read(CHUNK_SIZE)
         if header != b'MTrk':
             raise TypeError("Bad track header in midi file: " + str(header))
         track_size = unpack('>L', buffer.read(4))[0]
@@ -142,12 +139,29 @@ class FileWriter(object):
 
     def write_file_header(self, midifile, pattern):
         # First four bytes are MIDI header
-        # TODO: fix resolution shit
+        pattern = self.check_resolution(pattern)
         packdata = pack(">LHHH", 6,    
                         pattern.format, 
                         len(pattern),
                         pattern.resolution)
         midifile.write(b'MThd%s' % packdata)
+    
+    def check_resolution(self, pattern):
+        '''Check if any tick values '''
+        if self.check_float(pattern):
+            pattern.resolution = MAX_TICK_RESOLUTION
+            coeff = MAX_TICK_RESOLUTION / pattern.resolution
+            for track in pattern:
+                for event in track:
+                    event.data = list(map(lambda x: int(x * coeff + .5), event.data))
+                    event.tick = int(event.tick * coeff + .5)
+        return pattern
+    
+    def check_float(self, pattern):
+        return any(datum % 1 != 0
+                   for track in pattern
+                   for event in track
+                   for datum in [event.tick] + event.data)
             
     def write_track(self, midifile, track):
         buf = b''
@@ -179,6 +193,7 @@ class FileWriter(object):
                 self.running_status.channel != event.channel:
                     self.running_status = event
                     ret += bytearray([event.status | event.channel])
+            event = event._truncate()
             ret += b''.join(map(lambda x: bytearray([x]), event.data))
         else:
             raise ValueError("Unknown MIDI Event: " + str(event))

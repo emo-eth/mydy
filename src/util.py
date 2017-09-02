@@ -37,6 +37,6 @@ def _flag_next_byte(byte):
 def _remove_flag(byte):
     '''Extract value from byte by masking last 7 bits'''
     return byte & 0x7f
-
+              
 # alias
 _7_bit_mask = _remove_flag

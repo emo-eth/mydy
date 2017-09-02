@@ -2,6 +2,7 @@
 Container classes for MIDI Patterns and Tracks
 '''
 from pprint import pformat, pprint
+from Constants import MAX_TICK_RESOLUTION
 
 
 class Track(list):
@@ -34,6 +35,9 @@ class Track(list):
                 event.tick -= running_tick
                 running_tick += event.tick
 
+    def copy(self):
+        return Track((event.copy() for event in self), self.relative)
+
     def __getitem__(self, item):
         if isinstance(item, slice):
             indices = item.indices(len(self))
@@ -43,9 +47,6 @@ class Track(list):
 
     def __repr__(self):
         return "midi.Track(\\\n  %s)" % (pformat(list(self)).replace('\n', '\n  '), )
-
-    def copy(self):
-        return Track((event.copy() for event in self), self.relative)
 
     def __eq__(self, o):
         return (super(Track, self).__eq__(o) and self.relative == o.relative)
@@ -99,10 +100,23 @@ class Pattern(list):
     '''
     def __init__(self, tracks=[], resolution=220, fmt=1, relative=True):
         self.format = fmt
-        self.resolution = resolution
+        self._resolution = resolution
         self.relative = relative
         super(Pattern, self).__init__(tracks)
         assert ((fmt == 0 and len(self) <= 1) or (len(self) >= 1))
+    
+    @property
+    def resolution(self):
+        return self._resolution
+
+    @resolution.setter
+    def resolution(self, val):
+        assert 0 <= val <= MAX_TICK_RESOLUTION, "Invalid 2-byte value"
+        coeff = val / self.resolution
+        for track in self:
+            for event in track:
+                event.tick *= coeff
+        self._resolution = val
     
     def copy(self):
         # TODO: add kwarg support?
@@ -120,6 +134,8 @@ class Pattern(list):
                                   self.format, self.relative)
         elif isinstance(o, Pattern):
             return self + o.copy()
+        elif isinstance(o, Track):
+            return self.copy().append(o.copy())
         else:
             raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
     
