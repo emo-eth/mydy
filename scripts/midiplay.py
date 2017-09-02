@@ -2,8 +2,6 @@
 """
 Attach to a MIDI device and send the contents of a MIDI file to it.
 """
-from __future__ import print_function
-
 import sys
 import time
 import midi

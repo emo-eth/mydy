@@ -1,4 +1,3 @@
-from __future__ import print_function
 import midi
 # Instantiate a MIDI Pattern (contains a list of tracks)
 pattern = midi.Pattern()

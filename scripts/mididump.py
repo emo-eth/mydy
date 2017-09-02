@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-from __future__ import print_function
-
 """
 Print a description of a MIDI file.
 """
+
+import sys, os
 import midi
-import sys
 
 if len(sys.argv) != 2:
     print("Usage: {0} <midifile>".format(sys.argv[0]))
