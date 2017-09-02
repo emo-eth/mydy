@@ -46,4 +46,6 @@ THIRTYSECOND = 5
 SIXTYFOURTH = 6
 
 DEFAULT_MIDI_HEADER_SIZE = 14
-
+CHUNK_SIZE = 4  # size of midi file or track header in bytes
+HEADER_SIZE = 10  # size of midi header contents in bytes
+MAX_TICK_RESOLUTION = 32767

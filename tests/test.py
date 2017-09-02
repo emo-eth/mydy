@@ -3,12 +3,12 @@ Tests for MIDI modules
 '''
 import unittest
 import random
-import Util
 import math
+from itertools import chain
+import Util
 import FileIO
 import Events
 from Constants import MAX_TICK_RESOLUTION
-from itertools import chain
 
 class TestUtil(unittest.TestCase):
     def test_symmetry(self):
