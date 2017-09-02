@@ -33,7 +33,6 @@ class TempoMap(list):
             last = tm
         return last
 
-
 class EventStreamIterator(object):
     def __init__(self, stream, window):
         self.stream = stream
@@ -96,3 +95,4 @@ class EventStreamIterator(object):
                 return ret
             ret.append(event)
         return ret
+

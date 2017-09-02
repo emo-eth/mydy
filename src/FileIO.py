@@ -4,10 +4,17 @@ Classes for reading and writing MIDI files
 '''
 from warnings import warn
 from struct import unpack, pack
+<<<<<<< HEAD
 from .Util import read_varlen, write_varlen
 from .Constants import DEFAULT_MIDI_HEADER_SIZE, CHUNK_SIZE, HEADER_SIZE, MAX_TICK_RESOLUTION
 from .Containers import Track, Pattern
 from .Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent, Event
+=======
+from Util import read_varlen, write_varlen
+from Constants import DEFAULT_MIDI_HEADER_SIZE, CHUNK_SIZE, HEADER_SIZE, MAX_TICK_RESOLUTION
+from Containers import Track, Pattern
+from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent, Event
+>>>>>>> origin/master
 
 
 class FileReader(object):
@@ -21,6 +28,10 @@ class FileReader(object):
             track += self.parse_track(buffer)
         return pattern
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
     def parse_file_header(self, buffer):
         '''
         Parse header information from a buffer and return a Pattern based on that information.
@@ -40,6 +51,10 @@ class FileReader(object):
         tracks = [Track() for _ in range(num_tracks)]
         return Pattern(tracks=tracks, resolution=resolution, fmt=fmt)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
     def parse_track(self, buffer):
         '''Parse a MIDI track into a tuple of events'''
         self.running_status = None
@@ -54,6 +69,10 @@ class FileReader(object):
                 break
         return tuple(events)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
     def parse_track_header(self, buffer):
         '''Parse track information from header
         Return track size in bytes'''
@@ -73,6 +92,10 @@ class FileReader(object):
         elif MetaEvent.is_event(header_byte):
             return self.parse_meta_event(tick, track_iter)
         return self.parse_midi_event(tick, header_byte, track_iter)
+<<<<<<< HEAD
+=======
+        
+>>>>>>> origin/master
 
     def parse_sysex_event(tick, track_iter):
         '''
@@ -86,6 +109,10 @@ class FileReader(object):
             byte = next(track_iter)
         return SysexEvent(tick=tick, data=payload)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/master
     def parse_meta_event(self, tick, track_iter):
         '''
         Parse and return a MetaEvent subclass from a byte iterator
@@ -99,6 +126,11 @@ class FileReader(object):
         length = read_varlen(track_iter)
         data = [next(track_iter) for x in range(length)]
         return cls(tick=tick, data=data, metacommand=metacommand)
+<<<<<<< HEAD
+=======
+        
+
+>>>>>>> origin/master
 
     def parse_midi_event(self, tick, header_byte, track_iter):
         '''
@@ -124,7 +156,10 @@ class FileReader(object):
             return cls(tick=tick, channel=channel, data=data)
         raise Warning("Uknown midi event: " + str(header_byte))
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 class FileWriter(object):
     def write(self, midifile, pattern):
         self.write_file_header(midifile, pattern)
@@ -134,12 +169,21 @@ class FileWriter(object):
     def write_file_header(self, midifile, pattern):
         # First four bytes are MIDI header
         pattern = self.check_resolution(pattern)
+<<<<<<< HEAD
         packdata = pack(">LHHH", 6,
                         pattern.format,
                         len(pattern),
                         pattern.resolution)
         midifile.write(b'MThd%s' % packdata)
 
+=======
+        packdata = pack(">LHHH", 6,    
+                        pattern.format, 
+                        len(pattern),
+                        pattern.resolution)
+        midifile.write(b'MThd%s' % packdata)
+    
+>>>>>>> origin/master
     def check_resolution(self, pattern):
         '''Check if any tick values '''
         if self.check_float(pattern):
@@ -147,17 +191,28 @@ class FileWriter(object):
             coeff = MAX_TICK_RESOLUTION / pattern.resolution
             for track in pattern:
                 for event in track:
+<<<<<<< HEAD
                     event.data = list(
                         map(lambda x: int(x * coeff + .5), event.data))
                     event.tick = int(event.tick * coeff + .5)
         return pattern
 
+=======
+                    event.data = list(map(lambda x: int(x * coeff + .5), event.data))
+                    event.tick = int(event.tick * coeff + .5)
+        return pattern
+    
+>>>>>>> origin/master
     def check_float(self, pattern):
         return any(datum % 1 != 0
                    for track in pattern
                    for event in track
                    for datum in [event.tick] + event.data)
+<<<<<<< HEAD
 
+=======
+            
+>>>>>>> origin/master
     def write_track(self, midifile, track):
         buf = b''
         self.running_status = None
@@ -184,23 +239,36 @@ class FileWriter(object):
         # not a Meta MIDI event or a Sysex event, must be a general message
         elif isinstance(event, Event):
             if not self.running_status or \
+<<<<<<< HEAD
                     self.running_status.status != event.status or \
                     self.running_status.channel != event.channel:
                 self.running_status = event
                 ret += bytearray([event.status | event.channel])
+=======
+                self.running_status.status != event.status or \
+                self.running_status.channel != event.channel:
+                    self.running_status = event
+                    ret += bytearray([event.status | event.channel])
+>>>>>>> origin/master
             event = event._truncate()
             ret += b''.join(map(lambda x: bytearray([x]), event.data))
         else:
             raise ValueError("Unknown MIDI Event: " + str(event))
         return ret
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 def write_midifile(filename, pattern):
     with open(filename, 'wb') as f:
         writer = FileWriter()
         return writer.write(f, pattern)
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
 def read_midifile(filename):
     with open(filename, 'rb') as f:
         reader = FileReader()
