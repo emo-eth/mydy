@@ -11,6 +11,7 @@ from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent, Event
 
 class FileReader(object):
 
+    # TODO: move these to constants
     CHUNK_SIZE = 4  # size of midi file or track header in bytes
     HEADER_SIZE = 10  # size of midi header contents in bytes
 
@@ -147,7 +148,6 @@ class FileReader(object):
 
 class FileWriter(object):
     def write(self, midifile, pattern):
-        print(pattern)
         self.write_file_header(midifile, pattern)
         for track in pattern:
             self.write_track(midifile, track)
@@ -165,20 +165,15 @@ class FileWriter(object):
         buf = b''
         self.running_status = None
         for event in track:
-            ev = self.encode_event(event)
-            print(ev)
-            buf += ev
+            buf += self.encode_event(event)
         buf = self.encode_track_header(len(buf)) + buf
-        print(b'~~~' + buf)
         midifile.write(buf)
 
     def encode_track_header(self, trklen):
-        print(b'MTrk%s' % pack(">L", trklen))
         return b'MTrk%s' % pack(">L", trklen)
 
     def encode_event(self, event):
-        ret = b''
-        ret += write_varlen(event.tick)
+        ret = write_varlen(event.tick)
         # is the event a MetaEvent?
         if isinstance(event, MetaEvent):
             ret += bytes([event.status]) + bytes([event.metacommand])
@@ -201,14 +196,12 @@ class FileWriter(object):
             raise ValueError("Unknown MIDI Event: " + str(event))
         return ret
 
-def write_midifile(midifile, pattern):
-    if isinstance(midifile, str):
-        midifile = open(midifile, 'wb')
-    writer = FileWriter()
-    return writer.write(midifile, pattern)
+def write_midifile(filename, pattern):
+    with open(filename, 'wb') as f:
+        writer = FileWriter()
+        return writer.write(f, pattern)
 
-def read_midifile(midifile):
-    if isinstance(midifile, str):
-        midifile = open(midifile, 'rb')
-    reader = FileReader()
-    return reader.read(midifile)
+def read_midifile(filename):
+    with open(filename, 'rb') as f:
+        reader = FileReader()
+        return reader.read(f)

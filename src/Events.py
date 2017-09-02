@@ -46,7 +46,6 @@ class AbstractEvent(metaclass=EventMetaclass):
     Abstract MIDI event, from which Event and MetaEvent inherit.
     '''
 
-    __slots__ = ['tick', 'data']
     name = "Generic MIDI Event"
     length = 0
     status = 0x0
@@ -89,7 +88,6 @@ class AbstractEvent(metaclass=EventMetaclass):
 
 
 class Event(AbstractEvent):
-    __slots__ = ['channel']
     name = 'Event'
 
     def __init__(self, **kw):
