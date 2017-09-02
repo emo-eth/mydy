@@ -50,15 +50,11 @@ class AbstractEvent(metaclass=EventMetaclass):
     length = 0
     status = 0x0
 
-    def __init__(self, **kw):
-        if isinstance(self.length, int):
+    def __init__(self, tick=0, data=[]):
+        if not data and isinstance(self.length, int):
             data = [0] * self.length
-        else:
-            data = []
         self.tick = 0
         self.data = data
-        for key in kw:
-            setattr(self, key, kw[key])
 
     def __lt__(self, other):
         if self.tick < other.tick:
@@ -90,11 +86,9 @@ class AbstractEvent(metaclass=EventMetaclass):
 class Event(AbstractEvent):
     name = 'Event'
 
-    def __init__(self, **kw):
-        if 'channel' not in kw:
-            kw = kw.copy()
-            kw['channel'] = 0
-        super(Event, self).__init__(**kw)
+    def __init__(self, channel=0, tick=0, data=[], **kw):
+        super(Event, self).__init__(tick, data)
+        self.channel = channel
 
     def copy(self, **kw):
         _kw = {'channel': self.channel, 'tick': self.tick, 'data': self.data}
@@ -117,6 +111,41 @@ class Event(AbstractEvent):
     def is_event(cls, status):
         return (cls.status == (status & 0xF0))
 
+    def __add__(self, o):
+        if isinstance(o, int):
+            if hasattr(self, 'pitch'):
+                self.pitch += o
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+
+    def __radd__(self, o):
+        return self.__add__(o)
+    
+    def __sub__(self, o):
+        if isinstance(o, int):
+            if hasattr(self, 'pitch'):
+                self.pitch -= o
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+
+    def __rsub__(self, o):
+        return self.__sub__(o)
+    
+    def __rshift__(self, o):
+        if isinstance(o, int):
+            if hasattr(self, 'velocity'):
+                self.velocity += o
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __lshift__(self, o):
+        if isinstance(o, int):
+            if hasattr(self, 'velocity'):
+                self.velocity -= o
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+
 
 class MetaEvent(AbstractEvent):
     '''
@@ -128,6 +157,10 @@ class MetaEvent(AbstractEvent):
     status = 0xFF
     metacommand = 0x0
     name = 'Meta Event'
+
+    def __init__(self, tick=0, data=[], metacommand=None):
+        super(MetaEvent, self).__init__(tick, data)
+        if metacommand: self.metacommand = metacommand
 
     @classmethod
     def is_event(cls, status):
@@ -142,12 +175,17 @@ class NoteEvent(Event):
     '''
     length = 2
 
+    def __init__(self, pitch=None, velocity=None, channel=0, tick=0, data=[], **kw):
+        super(NoteEvent, self).__init__(channel, tick, data)
+        if pitch is not None: self.pitch = pitch
+        if velocity is not None: self.velocity = velocity
+
     @property
     def pitch(self):
         return self.data[0]
 
     @pitch.setter
-    def set_pitch(self, val):
+    def pitch(self, val):
         self.data[0] = val
 
     @property
@@ -155,7 +193,7 @@ class NoteEvent(Event):
         return self.data[1]
 
     @velocity.setter
-    def set_velocity(self, val):
+    def velocity(self, val):
         self.data[1] = val
 
 
@@ -174,12 +212,17 @@ class AfterTouchEvent(Event):
     length = 2
     name = 'After Touch'
 
+    def __init__(self, pitch=None, value=None, channel=0, tick=0, data=[], **kw):
+        super(AfterTouchEvent, self).__init__(channel, tick, data)
+        if pitch is not None: self.pitch = pitch
+        if value is not None: self.value = value
+
     @property
     def pitch(self):
         return self.data[0]
 
     @pitch.setter
-    def set_pitch(self, val):
+    def pitch(self, val):
         self.data[0] = val
 
     @property
@@ -187,7 +230,7 @@ class AfterTouchEvent(Event):
         return self.data[1]
 
     @value.setter
-    def set_value(self, val):
+    def value(self, val):
         self.data[1] = val
 
 
@@ -196,12 +239,17 @@ class ControlChangeEvent(Event):
     length = 2
     name = 'Control Change'
 
+    def __init__(self, control=None, value=None, channel=0, tick=0, data=[], **kw):
+        super(ControlChangeEvent, self).__init__(channel, tick, data)
+        if control is not None: self.control = control
+        if value is not None: self.value = value
+
     @property
     def control(self):
         return self.data[0]
 
     @control.setter
-    def set_control(self, val):
+    def control(self, val):
         self.data[0] = val
 
     @property
@@ -209,7 +257,7 @@ class ControlChangeEvent(Event):
         return self.data[1]
 
     @value.setter
-    def set_value(self, val):
+    def value(self, val):
         self.data[1] = val
 
 
@@ -218,12 +266,16 @@ class ProgramChangeEvent(Event):
     length = 1
     name = 'Program Change'
 
+    def __init__(self, value=None, channel=0, tick=0, data=[], **kw):
+        super(ProgramChangeEvent, self).__init__(channel, tick, data)
+        if value is not None: self.value = value
+
     @property
     def value(self):
         return self.data[0]
 
     @value.setter
-    def set_value(self, val):
+    def value(self, val):
         self.data[0] = val
 
 
@@ -232,12 +284,16 @@ class ChannelAfterTouchEvent(Event):
     length = 1
     name = 'Channel After Touch'
 
+    def __init__(self, value=None, channel=0, tick=0, data=[], **kw):
+        super(ChannelAfterTouchEvent, self).__init__(channel, tick, data)
+        if value is not None: self.value = value
+
     @property
     def value(self):
         return self.data[1]
     
     @value.setter
-    def set_value(self, val):
+    def value(self, val):
         self.data[1] = val
 
 
@@ -246,12 +302,16 @@ class PitchWheelEvent(Event):
     length = 2
     name = 'Pitch Wheel'
 
+    def __init__(self, pitch=None, channel=0, tick=0, data=[], **kw):
+        super(PitchWheelEvent, self).__init__(channel, tick, data)
+        if pitch is not None: self.pitch = pitch
+
     @property
     def pitch(self):
         return ((self.data[1] << 7) | self.data[0]) - 0x2000
 
     @pitch.setter
-    def set_pitch(self, pitch):
+    def pitch(self, pitch):
         value = pitch + 0x2000
         self.data[0] = value & 0x7F
         self.data[1] = (value >> 7) & 0x7F
@@ -277,10 +337,17 @@ class MetaEventWithText(MetaEvent):
     '''
     Subclass of MetaEvent for events with text
     '''
-    def __init__(self, **kw):
+    def __init__(self, text=None, tick=0, data=[], **kw):
         super(MetaEventWithText, self).__init__(**kw)
-        if 'text' not in kw:
-            self.text = ''.join(chr(datum) for datum in self.data)
+        if text is not None: self.text = text
+    
+    @property
+    def text(self):
+        return ''.join(chr(datum) for datum in self.data)
+
+    @text.setter
+    def text(self, text):
+        self.data = bytearray(ord(c) for c in text)
 
     def __repr__(self):
         return self._baserepr(['text'])
@@ -340,13 +407,9 @@ class UnknownMetaEvent(MetaEvent):
     # which sets a local variable of the same name to shadow the class variable.
     metacommand = None
 
-    def __init__(self, **kw):
-        super(MetaEvent, self).__init__(**kw)
-        self.metacommand = kw['metacommand']
-
-    def copy(self, **kw):
-        kw['metacommand'] = self.metacommand
-        return super(UnknownMetaEvent, self).copy(kw)
+    def __init__(self, metacommand=None, tick=0, data=[]):
+        super(UnknownMetaEvent, self).__init__(tick, data)
+        self.metacommand = metacommand
 
 
 class ChannelPrefixEvent(MetaEvent):
@@ -371,16 +434,22 @@ class EndOfTrackEvent(MetaEvent):
 
 
 class SetTempoEvent(MetaEvent):
+    # TODO: look into how bpm and mpqn interact
     name = 'Set Tempo'
     metacommand = 0x51
     length = 3
+
+    def __init__(self, bpm=None, mpqn=None, tick=0, data=[], **kw):
+        super(SetTempoEvent, self).__init__(tick, data)
+        if bpm is not None: self.bpm = bpm
+        if mpqn is not None: self.mpqn = mpqn
 
     @property
     def bpm(self):
         return float(6e7) / self.mpqn
 
     @bpm.setter
-    def set_bpm(self, bpm):
+    def bpm(self, bpm):
         self.mpqn = int(float(6e7) / bpm)
 
     @property
@@ -390,7 +459,7 @@ class SetTempoEvent(MetaEvent):
         return sum(vals)
 
     @mpqn.setter
-    def set_mpqn(self, val):
+    def mpqn(self, val):
         self.data = [(val >> (16 - (8 * x)) & 0xFF) for x in range(3)]
 
 
@@ -404,19 +473,28 @@ class TimeSignatureEvent(MetaEvent):
     metacommand = 0x58
     length = 4
 
+    def __init__(self, numerator=None, denominator=None, metronome=None, thirty_seconds=None,
+                 tick=0, data=[], **kw):
+        super(TimeSignatureEvent, self).__init__(tick, data)
+        if numerator is not None: self.numerator = numerator
+        if denominator is not None: self.denominator = denominator
+        if metronome is not None: self.metronome = metronome
+        if thirty_seconds is not None: self.thirty_seconds = thirty_seconds
+
     @property
     def numerator(self):
         return self.data[0]
 
     @numerator.setter
-    def set_numerator(self, val):
+    def numerator(self, val):
         self.data[0] = val
 
     @property
     def denominator(self):
         return 2 ** self.data[1]
+    
     @denominator.setter
-    def set_denominator(self, val):
+    def denominator(self, val):
         self.data[1] = int(math.log(val, 2))
 
     @property
@@ -424,15 +502,15 @@ class TimeSignatureEvent(MetaEvent):
         return self.data[2]
 
     @metronome.setter
-    def set_metronome(self, val):
+    def metronome(self, val):
         self.data[2] = val
 
     @property
     def thirty_seconds(self):
         return self.data[3]
-    
+
     @thirty_seconds.setter
-    def set_thirty_seconds(self, val):
+    def thirty_seconds(self, val):
         self.data[3] = val
 
 
@@ -441,13 +519,19 @@ class KeySignatureEvent(MetaEvent):
     metacommand = 0x59
     length = 2
 
+    def __init__(self, alternatives=None, minor=None, channel=0, tick=0, data=[],
+                 **kw):
+        super(KeySignatureEvent, self).__init__(tick, data)
+        if alternatives is not None: self.alternatives = alternatives
+        if minor is not None: self.minor = minor
+
     @property
     def alternatives(self):
         d = self.data[0]
         return d - 256 if d > 127 else d
 
     @alternatives.setter
-    def set_alternatives(self, val):
+    def alternatives(self, val):
         self.data[0] = 256 + val if val < 0 else val
 
     @property
@@ -455,7 +539,7 @@ class KeySignatureEvent(MetaEvent):
         return self.data[1]
 
     @minor.setter
-    def set_minor(self, val):
+    def minor(self, val):
         self.data[1] = val
 
 

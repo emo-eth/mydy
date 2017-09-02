@@ -40,6 +40,14 @@ class Track(list):
     def __repr__(self):
         return "midi.Track(\\\n  %s)" % (pformat(list(self)).replace('\n', '\n  '), )
 
+    def __add__(self, o):
+        if isinstance(o, int):
+            map(lambda x: x + o, self)
+        elif isinstance(o, Track):
+            self += o
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+
 
 
 class Pattern(list):

@@ -19,19 +19,19 @@ def write_varlen(value):
     '''Translates a value to bytes in the variable length format'''
     # deques let us appendleft at no cost
     chrs = deque()
-    chrs.appendleft(bytes([_7_bit_mask(value)]))
+    chrs.appendleft(bytearray([_7_bit_mask(value)]))
     value >>= 7
     while value:
-        chrs.appendleft(bytes([_flag_next_byte(_7_bit_mask(value))]))
+        chrs.appendleft(bytearray([_flag_next_byte(_7_bit_mask(value))]))
         value >>= 7
     return b''.join(chrs)
 
 def _has_next_byte(byte):
-    '''Determine if stream has a next byte by checking the most significant bit (MSB)'''
+    '''Determine if stream has a next byte by checking the most significant bit'''
     return byte & 0x80
 
 def _flag_next_byte(byte):
-    '''Flag the MSB to indicate more bytes incoming'''
+    '''Flag the most significant bit to indicate more bytes incoming'''
     return byte | 0x80
 
 def _remove_flag(byte):

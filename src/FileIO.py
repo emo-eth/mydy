@@ -176,22 +176,22 @@ class FileWriter(object):
         ret = write_varlen(event.tick)
         # is the event a MetaEvent?
         if isinstance(event, MetaEvent):
-            ret += bytes([event.status]) + bytes([event.metacommand])
+            ret += bytearray([event.status]) + bytearray([event.metacommand])
             ret += write_varlen(len(event.data))
-            ret += b''.join(map(lambda x: bytes([x]), event.data))
+            ret += b''.join(map(lambda x: bytearray([x]), event.data))
         # is this event a Sysex Event?
         elif isinstance(event, SysexEvent):
-            ret += bytes([0xF0])
-            ret += b''.join(map(lambda x: bytes([x]), event.data))
-            ret += bytes([0xF7])
+            ret += bytearray([0xF0])
+            ret += b''.join(map(lambda x: bytearray([x]), event.data))
+            ret += bytearray([0xF7])
         # not a Meta MIDI event or a Sysex event, must be a general message
         elif isinstance(event, Event):
             if not self.running_status or \
                 self.running_status.status != event.status or \
                 self.running_status.channel != event.channel:
                     self.running_status = event
-                    ret += bytes([event.status | event.channel])
-            ret += b''.join(map(lambda x: bytes([x]), event.data))
+                    ret += bytearray([event.status | event.channel])
+            ret += b''.join(map(lambda x: bytearray([x]), event.data))
         else:
             raise ValueError("Unknown MIDI Event: " + str(event))
         return ret
