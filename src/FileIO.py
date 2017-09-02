@@ -4,7 +4,7 @@ Classes for reading and writing MIDI files
 '''
 from warnings import warn
 from struct import unpack, pack
-from util import read_varlen, write_varlen
+from Util import read_varlen, write_varlen
 from Constants import DEFAULT_MIDI_HEADER_SIZE, CHUNK_SIZE, HEADER_SIZE, MAX_TICK_RESOLUTION
 from Containers import Track, Pattern
 from Events import MetaEvent, SysexEvent, EventRegistry, UnknownMetaEvent, Event

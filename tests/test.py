@@ -3,7 +3,7 @@ Tests for MIDI modules
 '''
 import unittest
 import random
-import util
+import Util
 import math
 import FileIO
 import Events
@@ -14,7 +14,7 @@ class TestUtil(unittest.TestCase):
     def test_symmetry(self):
         for _ in range(1000):
             test = random.randint(0, 2 ** (7 * 4)-1)
-            self.assertEqual(test, util.read_varlen(iter(util.write_varlen(test))))
+            self.assertEqual(test, Util.read_varlen(iter(Util.write_varlen(test))))
 
 class TestFileIO(unittest.TestCase):
 
@@ -70,6 +70,7 @@ class TestEvents(unittest.TestCase):
 class TestTracks(unittest.TestCase):
     
     def test_add_track(self):
+        '''Test that tracks support integer addition'''
         pattern = FileIO.read_midifile('mary.mid')
         track1 = pattern[1]
         track2 = track1 + 1
@@ -78,6 +79,7 @@ class TestTracks(unittest.TestCase):
         self.assertEqual(track1, track3)
 
     def test_shift_track(self):
+        '''Test that tracks support integer shift operations'''
         pattern = FileIO.read_midifile('mary.mid')
         track1 = pattern[1]
         track2 = track1 >> 1
@@ -86,6 +88,7 @@ class TestTracks(unittest.TestCase):
         self.assertEqual(track1, track3)
     
     def test_mul_track(self):
+        '''Test that tracks support integer and float multiplication'''
         pattern = FileIO.read_midifile('mary.mid')
         track1 = pattern[1]
         track1 * 1  # test ints are valid too
@@ -100,6 +103,7 @@ class TestTracks(unittest.TestCase):
 class TestPattern(unittest.TestCase):
 
     def test_deep_eq(self):
+        '''Test that two pattern objects equal each other'''
         read1 = FileIO.read_midifile('mary.mid')
         read2 = FileIO.read_midifile('mary.mid')
         self.assertEqual(read1, read2)
