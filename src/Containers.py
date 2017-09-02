@@ -5,7 +5,16 @@ from pprint import pformat, pprint
 
 
 class Track(list):
+    '''
+    Track class to hold midi events within a pattern.
+    '''
     def __init__(self, events=[], relative=True):
+        '''
+        Params:
+            Optional:
+            events: iterable - collection of events to include in the track
+            relative: bool - whether or not ticks are relative or absolute
+        '''
         self.relative = relative
         super(Track, self).__init__(events)
 
@@ -28,54 +37,131 @@ class Track(list):
     def __getitem__(self, item):
         if isinstance(item, slice):
             indices = item.indices(len(self))
-            return Track((super(Track, self).__getitem__(i) for i in range(*indices)))
+            return Track((super(Track, self).__getitem__(i).copy() for i in range(*indices)))
         else:
             return super(Track, self).__getitem__(item)
-
-    def __getslice__(self, i, j):
-        # The deprecated __getslice__ is still called when subclassing built-in types
-        # for calls of the form List[i:j]
-        return self.__getitem__(slice(i,j))
 
     def __repr__(self):
         return "midi.Track(\\\n  %s)" % (pformat(list(self)).replace('\n', '\n  '), )
 
+    def copy(self):
+        return Track((event.copy() for event in self), self.relative)
+
+    def __eq__(self, o):
+        return (super(Track, self).__eq__(o) and self.relative == o.relative)
+
     def __add__(self, o):
         if isinstance(o, int):
-            map(lambda x: x + o, self)
+            return Track(map(lambda x: x + o, self), self.relative)
         elif isinstance(o, Track):
-            self += o
+            return self + o.copy()
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __sub__(self, o):
+        if isinstance(o, int):
+            return self + (-o)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __rshift__(self, o):
+        if isinstance(o, int):
+            return Track(map(lambda x: x >> o, self), self.relative)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+
+    def __lshift__(self, o):
+        if isinstance(o, int):
+            return self >> (-o)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __mul__(self, o):
+        if o <= 0:
+            raise TypeError(f"multiplication factor must be greater than zero")
+        elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
+            return Track(map(lambda x: x * o, self), self.relative)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __truediv__(self, o):
+        if o <= 0:
+            raise TypeError(f"multiplication factor must be greater than zero")
+        elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
+            return self * (1 / o)
         else:
             raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
 
-
 class Pattern(list):
+    '''
+    Pattern class to hold midi tracks
+    '''
     def __init__(self, tracks=[], resolution=220, fmt=1, relative=True):
-        assert ((fmt == 0 and len(tracks) <= 1) or (len(tracks) >= 1))
         self.format = fmt
         self.resolution = resolution
-        self.relative_tick = relative
+        self.relative = relative
         super(Pattern, self).__init__(tracks)
+        assert ((fmt == 0 and len(self) <= 1) or (len(self) >= 1))
+    
+    def copy(self):
+        # TODO: add kwarg support?
+        return Pattern((track.copy() for track in self), self.resolution, self.format, self.relative)
 
-    # @property
-    # def tracks(self):
-    #     return self._tracks
+    def __eq__(self, o):
+        return (super(Pattern, self).__eq__(o)
+                and self.resolution == o.resolution
+                and self.format == o.format
+                and self.relative == o.relative)
+    
+    def __add__(self, o):
+        if isinstance(o, int):
+            return Pattern(map(lambda x: x + o, self), self.resolution,
+                                  self.format, self.relative)
+        elif isinstance(o, Pattern):
+            return self + o.copy()
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __sub__(self, o):
+        if isinstance(o, int):
+            return self + (-o)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __rshift__(self, o):
+        if isinstance(o, int):
+            return Pattern(map(lambda x: x >> o, self), self.resolution,
+                           self.format, self.relative)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-    # @tracks.setter
-    # def tracks(self, tracks):
-    #     return Pattern(self.format, self.num_tracks, self.resolution, tracks=[t.copy() for t in tracks])
+    def __lshift__(self, o):
+        if isinstance(o, int):
+            return self >> (-o)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __mul__(self, o):
+        if o <= 0:
+            raise TypeError(f"multiplication factor must be greater than zero")
+        elif (isinstance(o, int) or isinstance(o, float)):
+            return Pattern(map(lambda x: x * o, self), self.resolution,
+                           self.format, self.relative)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-    # def add_track(self, track, fmt=1):
-    #     if self.format != 0:
-    #         fmt = self.format
-    #     return Pattern(fmt, self.num_tracks + 1, self.resolution, tracks=[t.copy() for t in self.tracks] + [track.copy()])
+    def __truediv__(self, o):
+        if o <= 0:
+            raise TypeError(f"multiplication factor must be greater than zero")
+        elif (isinstance(o, int) or isinstance(o, float)):
+            return self * (1 / o)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
-    # @property
-    # def format(self):
-    #     return self.format
-
-    # @format.setter
-    # def format(self, fmt):
-    #     assert 0 <= fmt <= 2, "Format must be between 0 and 2, inclusive"
-    #     return Pattern(fmt, self.num_tracks, self.resolution, tracks=[t.copy() for t in self.tracks])
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            indices = item.indices(len(self))
+            return Pattern((super(Pattern, self).__getitem__(i).copy() for i in range(*indices)))
+        else:
+            return super(Pattern, self).__getitem__(item)

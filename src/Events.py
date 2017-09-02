@@ -53,7 +53,7 @@ class AbstractEvent(metaclass=EventMetaclass):
     def __init__(self, tick=0, data=[]):
         if not data and isinstance(self.length, int):
             data = [0] * self.length
-        self.tick = 0
+        self.tick = tick
         self.data = data
 
     def __lt__(self, other):
@@ -82,39 +82,19 @@ class AbstractEvent(metaclass=EventMetaclass):
     def __repr__(self):
         return self._baserepr()
 
-
-class Event(AbstractEvent):
-    name = 'Event'
-
-    def __init__(self, channel=0, tick=0, data=[], **kw):
-        super(Event, self).__init__(tick, data)
-        self.channel = channel
-
     def copy(self, **kw):
-        _kw = {'channel': self.channel, 'tick': self.tick, 'data': self.data}
+        _kw = {'tick': self.tick, 'data': self.data.copy()}
         _kw.update(kw)
         return self.__class__(**_kw)
-
-    def __lt__(self, other):
-        return (super(Event, self).__lt__(other) or
-                (super(Event, self).__eq__(other) and
-                 self.channel < other.channel))
-
-    def __eq__(self, other):
-        return super(Event, self).__eq__(other) and \
-            self.channel == other.channel
-
-    def __repr__(self):
-        return self._baserepr(['channel'])
-
-    @classmethod
-    def is_event(cls, status):
-        return (cls.status == (status & 0xF0))
 
     def __add__(self, o):
         if isinstance(o, int):
             if hasattr(self, 'pitch'):
-                self.pitch += o
+                new = self.copy()
+                new.pitch += o
+                return new
+            else:
+                return self.copy()
         else:
             raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
@@ -123,8 +103,7 @@ class Event(AbstractEvent):
     
     def __sub__(self, o):
         if isinstance(o, int):
-            if hasattr(self, 'pitch'):
-                self.pitch -= o
+            return self + (-o)
         else:
             raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
@@ -134,16 +113,69 @@ class Event(AbstractEvent):
     def __rshift__(self, o):
         if isinstance(o, int):
             if hasattr(self, 'velocity'):
-                self.velocity += o
+                new = self.copy()
+                new.velocity += o
+                return new
+            else:
+                return self.copy()
         else:
             raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
     
     def __lshift__(self, o):
         if isinstance(o, int):
-            if hasattr(self, 'velocity'):
-                self.velocity -= o
+            return self >> (-o)
         else:
             raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __mul__(self, o):
+        # TODO: handle resolution changes as necessary
+        if o <= 0:
+            raise TypeError(f"multiplication factor must be greater than zero")
+        elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
+            new = self.copy()
+            new.tick *= o
+            return new
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+    
+    def __truediv__(self, o):
+        if o <= 0:
+            raise TypeError(f"multiplication factor must be greater than zero")
+        elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
+            return self * (1 / o)
+        else:
+            raise TypeError(f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+
+
+
+class Event(AbstractEvent):
+    name = 'Event'
+
+    def __init__(self, channel=0, tick=0, data=[], **kw):
+        super(Event, self).__init__(tick, data)
+        self.channel = channel
+
+    def copy(self, **kw):
+        _kw = {'channel': self.channel, 'tick': self.tick, 'data': self.data.copy()}
+        _kw.update(kw)
+        return self.__class__(**_kw)
+
+    def __lt__(self, other):
+        return (super(Event, self).__lt__(other) or
+                (super(Event, self).__eq__(other) and
+                 self.channel < other.channel))
+
+    def __eq__(self, other):
+        return (super(Event, self).__eq__(other) and
+                self.channel == other.channel)
+
+    def __repr__(self):
+        return self._baserepr(['channel'])
+
+    @classmethod
+    def is_event(cls, status):
+        return (cls.status == (status & 0xF0))
+
     
 
 
@@ -165,6 +197,11 @@ class MetaEvent(AbstractEvent):
     @classmethod
     def is_event(cls, status):
         return (status == cls.status)
+    
+    def copy(self, **kw):
+        _kw = {'metacommand': self.metacommand, 'tick': self.tick, 'data': self.data.copy()}
+        _kw.update(kw)
+        return self.__class__(**_kw)
 
 
 class NoteEvent(Event):
@@ -340,14 +377,18 @@ class MetaEventWithText(MetaEvent):
     def __init__(self, text=None, tick=0, data=[], **kw):
         super(MetaEventWithText, self).__init__(**kw)
         if text is not None: self.text = text
+        self._text = None
     
     @property
     def text(self):
-        return ''.join(chr(datum) for datum in self.data)
+        if self._text is None:
+            self._text = ''.join(chr(datum) for datum in self.data)
+        return self._text
 
     @text.setter
     def text(self, text):
         self.data = bytearray(ord(c) for c in text)
+        self._text = None
 
     def __repr__(self):
         return self._baserepr(['text'])

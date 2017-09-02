@@ -37,24 +37,12 @@ class FileReader(object):
         header_size = data[0]
         fmt = data[1]
         num_tracks = data[2]
-        resolution = self.parse_resolution(data[3])
+        resolution = data[3]
         # assume any remaining bytes in header are padding
         if header_size > DEFAULT_MIDI_HEADER_SIZE:
             buffer.read(header_size - DEFAULT_MIDI_HEADER_SIZE)
         tracks = [Track() for _ in range(num_tracks)]
         return Pattern(tracks=tracks, resolution=resolution, fmt=fmt)
-
-
-    def parse_resolution(self, resolution):
-        '''
-        Parse resolution information in MIDI header, either ticks per quarter note
-        or SMPTE information
-        '''
-        if resolution & 0x80000:
-            smpte = (resolution >> 7) | 0x7f
-            ticks_per_frame = resolution | 0x7f
-            return (smpte, ticks_per_frame)
-        return (resolution,)
 
 
     def parse_track(self, buffer):
@@ -158,7 +146,7 @@ class FileWriter(object):
         packdata = pack(">LHHH", 6,    
                         pattern.format, 
                         len(pattern),
-                        pattern.resolution[0])
+                        pattern.resolution)
         midifile.write(b'MThd%s' % packdata)
             
     def write_track(self, midifile, track):
