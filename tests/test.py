@@ -7,9 +7,14 @@ import math
 from itertools import chain
 # in the dev environment, mydy is known as src
 import src as mydy
-from mydy import Util, FileIO, Events
-from mydy.Constants import MAX_TICK_RESOLUTION
+# from mydy import Util, FileIO, Events
+# from mydy.Constants import MAX_TICK_RESOLUTION
 
+Util = mydy.Util
+FileIO = mydy.FileIO
+Events = mydy.Events
+Containers = mydy.Containers
+MAX_TICK_RESOLUTION = mydy.Constants.MAX_TICK_RESOLUTION
 
 class TestUtil(unittest.TestCase):
     def test_symmetry(self):
@@ -148,6 +153,19 @@ class TestTracks(unittest.TestCase):
         self.assertEqual(abscopy, abscopy2)
         relcopy = abscopy.make_ticks_rel()
         self.assertEqual(track, relcopy)
+    
+    def test_merge(self):
+        pattern = FileIO.read_midifile('mary.mid')
+        track = pattern[1]
+        # TODO: nudge operator?
+        def shift_100(event):
+            event = event.copy()
+            event.tick += 100
+            return event
+        shifted = track.copy()
+        shifted[0].tick += 100
+        merged = track.merge(shifted)
+        self.assertTrue(track.merge(shifted).length == track.length + 100)
 
 
 class TestPattern(unittest.TestCase):

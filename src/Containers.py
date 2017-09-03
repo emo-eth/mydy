@@ -66,6 +66,18 @@ class Track(list):
         copy.relative = True
         return copy
 
+    def merge(self, o):
+        '''Merge two MIDI tracks so they are a single MIDI track'''
+        assert isinstance(o, Track), "Can only merge with other tracks"
+        abself = self.make_ticks_abs()
+        abso = o.make_ticks_abs()
+        combined = abself + abso
+        combined = Track(events=sorted(combined, key=lambda x: x.tick), relative=False)
+        combined.relative = self.relative
+        return combined
+
+
+
     def copy(self):
         return Track((event.copy() for event in self), self.relative)
 
@@ -87,7 +99,9 @@ class Track(list):
             return Track(map(lambda x: x + o, self), self.relative)
         elif isinstance(o, Track):
             copy = self.copy()
-            copy.extend(o.copy())
+            ocopy = o.copy()
+            o.relative = self.relative
+            copy.extend(ocopy)
             return copy
         raise TypeError(
             f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
@@ -99,6 +113,7 @@ class Track(list):
             f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __rshift__(self, o):
+        # TODO: allow function mapping?
         if isinstance(o, int):
             return Track(map(lambda x: x >> o, self), self.relative)
         raise TypeError(
@@ -133,18 +148,18 @@ class Track(list):
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
         # compute the length of the track in ticks
         length = self.length 
+        copy = self.make_ticks_rel()
         # grab the end-of-track-event
-        end_of_track = self[-1]
+        end_of_track = copy[-1]
         # grab everything but the end-of-track-event
         # this is the track we will be adding onto our returned track
-        new = self[:-1]
+        new = copy[:-1]
         body = Track(events=filter(
             lambda x: not MetaEvent.is_event(x.status), new))
-        # this will contain our new track
-        # add body of event for whole
+        # create whole copies of the body
         for _ in range(1, int(o)):
             new += body
-        # decide if we're extending by a float factor, add fraction to the end
+        # decide if we're extending by a partial factor, add fraction to the end
         cutoff = length * (o % 1)
         if cutoff:
             # keep track of absolute tick position and which notes are on
@@ -165,11 +180,11 @@ class Track(list):
                     for note in on:
                         new.append(NoteOffEvent(
                             tick=tick, pitch=note, velocity=0))
-                        # TODO: force relative ticks
                         # since these are relative ticks, set to 0
                         tick = 0
                     break
         new.append(end_of_track)
+        new.relative = self.relative
         return new
 
 
@@ -191,13 +206,11 @@ class Pattern(list):
 
     @relative.setter
     def relative(self, val):
+        # TODO: tests
         if (val != self.relative):
             self._relative = val
             for track in self:
-                if val:
-                    track._make_ticks_rel()
-                else:
-                    track._make_ticks_abs()
+                track.relative = val
 
     @property
     def resolution(self):
@@ -213,7 +226,6 @@ class Pattern(list):
         self._resolution = val
 
     def copy(self):
-        # TODO: add kwarg support?
         return Pattern((track.copy() for track in self), self.resolution, self.format, self.relative)
 
     def __repr__(self):
@@ -227,6 +239,7 @@ class Pattern(list):
                 and self.relative == o.relative)
 
     def __add__(self, o):
+        # TODO: consider formats when adding tracks
         if isinstance(o, int):
             return Pattern(map(lambda x: x + o, self), self.resolution,
                            self.format, self.relative)
@@ -234,9 +247,30 @@ class Pattern(list):
             copy = self.copy()
             copy.extend(o.copy())
             return copy
+
+            # # TODO: more tests
+            # if self.format == 0:
+            #     '''TODO: The first track of a Format 1 file is special, and is also known as the 'Tempo Map'. It should contain all meta-events of the types Time Signature, and Set Tempo. The meta-events Sequence/Track Name, Sequence Number, Marker, and SMTPE Offset. should also be on the first track of a Format 1 file.'''
+            #     copy = self.copy()
+            #     if o.format == 0:
+            #         copy.extend(o.copy())
+            #         # default to format 1
+            #         copy.format = 1
+            #         return copy
+            #     elif o.format == 1 or o.format == 2:
+            #         copy.format = o.format
+            #         ocopy = o.copy()
+            #         ocopy.extend(copy)
+            #         return ocopy
+            # if self.format == 0 and o.format == 1:
+            #     copy = self.copy()
+            #     copy.format = 1
+            #     return o.copy().extend(copy)
         elif isinstance(o, Track):
             copy = self.copy()
-            copy.append(o.copy())
+            ocopy = o.copy()
+            ocopy.relative = self.relative
+            copy.append(ocopy)
             return copy
         raise TypeError(
             f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
