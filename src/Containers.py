@@ -5,7 +5,6 @@ TODO: integer multiplication should extend a track/pattern, as with lists
 TODO: respect pattern format, ignore header track when performing vectorized operations
     TODO: see if getitem makes weirdness happen with slicing
 TODO: setter for relative ticks
-TODO: pow operator
 '''
 from functools import reduce
 from pprint import pformat, pprint
