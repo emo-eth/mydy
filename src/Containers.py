@@ -1,5 +1,10 @@
 '''
 Container classes for MIDI Patterns and Tracks
+
+TODO: integer multiplication should extend a track/pattern, as with lists
+TODO: respect pattern format, ignore header track when performing vectorized operations
+    TODO: see if getitem makes weirdness happen with slicing
+TODO: setter for relative ticks
 '''
 from pprint import pformat, pprint
 from .Constants import MAX_TICK_RESOLUTION
@@ -143,6 +148,7 @@ class Pattern(list):
         elif isinstance(o, Pattern):
             return self + o.copy()
         elif isinstance(o, Track):
+            # TODO: test this
             return self.copy().append(o.copy())
         else:
             raise TypeError(
