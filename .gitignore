@@ -4,3 +4,4 @@ dist
 .coverage
 .*.sw?
 *.egg*
+.vscode

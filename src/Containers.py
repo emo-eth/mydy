@@ -7,8 +7,10 @@ TODO: respect pattern format, ignore header track when performing vectorized ope
 TODO: setter for relative ticks
 TODO: pow operator
 '''
+from functools import reduce
 from pprint import pformat, pprint
 from .Constants import MAX_TICK_RESOLUTION
+from .Events import NoteOnEvent, NoteOffEvent, MetaEvent
 
 
 class Track(list):
@@ -101,6 +103,46 @@ class Track(list):
             return self * (1 / o)
         raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+
+    def __pow__(self, o):
+        if not (isinstance(o, int) or isinstance(o, float)):
+            raise TypeError(
+                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+        # compute the length of the track in ticks
+        length = reduce(lambda curr, event: curr + event.tick, self, 0)
+        # grab the end-of-track-event
+        end_of_track = self[-1]
+        # grab everything but the end-of-track-event
+        # this is the track we will be adding onto our returned track
+        new = self[:-1]
+        body = Track(events=filter(lambda x: not MetaEvent.is_event(x.status), new))
+        # this will contain our new track
+        # add body of event for whole
+        for i in range(int(o)):
+            new += body
+        # decide if we're extending by a float factor and add fractional bit on the end
+        cutoff = length * (o % 1)
+        if cutoff:
+            # keep track of absolute tick position and which notes are on
+            pos = 0
+            on = set()
+            for i, event in enumerate(body):
+                pos += event.tick
+                if isinstance(event, NoteOnEvent):
+                    on.add(event.pitch)
+                elif isinstance(event, NoteOffEvent):
+                    try:
+                        on.remove(event.pitch)
+                    except KeyError:
+                        pass
+                if pos > cutoff:
+                    new += body[:i]
+                    for note in on:
+                        tick = cutoff - (pos - event.tick)
+                        new.append(NoteOffEvent(tick=tick, pitch=note, velocity=0))
+                    break
+        new.append(end_of_track)
+        return new
 
 
 class Pattern(list):
