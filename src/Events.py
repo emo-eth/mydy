@@ -78,7 +78,7 @@ class AbstractEvent(metaclass=EventMetaclass):
             keyval = "%s=%r" % (key, val)
             body.append(keyval)
         body = str.join(', ', body)
-        return "midi.%s(%s)" % (self.__class__.__name__, body)
+        return "mydy.%s(%s)" % (self.__class__.__name__, body)
 
     def __repr__(self):
         return self._baserepr()

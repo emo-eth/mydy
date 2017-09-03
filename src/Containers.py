@@ -55,7 +55,7 @@ class Track(list):
             return super(Track, self).__getitem__(item)
 
     def __repr__(self):
-        return "midi.Track(\\\n  %s)" % (pformat(list(self)).replace('\n', '\n  '), )
+        return "mydy.Track(\\\n  %s)" % (pformat(list(self)).replace('\n', '\n  '), )
 
     def __eq__(self, o):
         return (super(Track, self).__eq__(o) and self.relative == o.relative)
@@ -175,7 +175,7 @@ class Pattern(list):
         return Pattern((track.copy() for track in self), self.resolution, self.format, self.relative)
 
     def __repr__(self):
-        return "midi.Pattern(format=%r, resolution=%r, tracks=\\\n%s)" % \
+        return "mydy.Pattern(format=%r, resolution=%r, tracks=\\\n%s)" % \
             (self.format, self.resolution, pformat(list(self)))
 
     def __eq__(self, o):
