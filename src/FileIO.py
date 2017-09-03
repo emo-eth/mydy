@@ -153,7 +153,7 @@ class FileWriter(object):
         return pattern
 
     def check_float(self, pattern):
-        return any(datum % 1 != 0
+        return any(isinstance(datum, float)
                    for track in pattern
                    for event in track
                    for datum in [event.tick] + event.data)

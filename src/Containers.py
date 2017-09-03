@@ -130,6 +130,10 @@ class Pattern(list):
         # TODO: add kwarg support?
         return Pattern((track.copy() for track in self), self.resolution, self.format, self.relative)
 
+    def __repr__(self):
+        return "midi.Pattern(format=%r, resolution=%r, tracks=\\\n%s)" % \
+            (self.format, self.resolution, pformat(list(self)))
+
     def __eq__(self, o):
         return (super(Pattern, self).__eq__(o)
                 and self.resolution == o.resolution
