@@ -1,6 +1,7 @@
 '''
 Classes for reading and writing MIDI files
 
+TODO: add checking for tick resolution, since some events might occur at a relative tick value that overflows
 '''
 from warnings import warn
 from struct import unpack, pack

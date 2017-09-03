@@ -62,7 +62,9 @@ class Track(list):
         if isinstance(o, int):
             return Track(map(lambda x: x + o, self), self.relative)
         elif isinstance(o, Track):
-            return self.copy() + o.copy()
+            copy = self.copy()
+            copy.extend(o.copy())
+            return copy
         raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
@@ -145,10 +147,14 @@ class Pattern(list):
             return Pattern(map(lambda x: x + o, self), self.resolution,
                            self.format, self.relative)
         elif isinstance(o, Pattern):
-            return self.copy() + o.copy()
+            copy = self.copy()
+            copy.extend(o.copy())
+            return copy
         elif isinstance(o, Track):
             # TODO: test this
-            return self.copy().append(o.copy())
+            copy = self.copy()
+            copy.append(o.copy())
+            return copy
         raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
