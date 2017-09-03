@@ -157,7 +157,7 @@ class TestTracks(unittest.TestCase):
     def test_merge(self):
         pattern = FileIO.read_midifile('mary.mid')
         track = pattern[1]
-        # TODO: nudge operator?
+        # TODO: nudge/shift operator/method?
         def shift_100(event):
             event = event.copy()
             event.tick += 100
@@ -166,6 +166,23 @@ class TestTracks(unittest.TestCase):
         shifted[0].tick += 100
         merged = track.merge(shifted)
         self.assertTrue(track.merge(shifted).length == track.length + 100)
+    
+    def test_map(self):
+        # Map supports optional attr; attrs that are Event-specific
+        pattern = FileIO.read_midifile('mary.mid')
+        track = pattern[1]
+        track = track.map(lambda e: 0, 'tick')
+        self.assertEqual(track.length, 0)
+        def change_tick(event):
+            event.tick = 0
+            return event
+        track = pattern[1].map(change_tick)
+        self.assertEqual(track.length, 0)
+        # not every event has a velocity attr
+        track = pattern[1].map(lambda e: 127, 'velocity')
+        self.assertEqual(track[5].velocity, 127)
+        track = pattern[1].make_ticks_abs().map(lambda e: e.tick ** 2, 'tick')
+        self.assertEqual(pattern[1].length ** 2, track.length)
 
 
 class TestPattern(unittest.TestCase):

@@ -10,7 +10,7 @@ TODO: should tracks care if they have relative ticks or not?
 from functools import reduce
 from pprint import pformat, pprint
 from .Constants import MAX_TICK_RESOLUTION
-from .Events import NoteOnEvent, NoteOffEvent, MetaEvent
+from .Events import NoteOnEvent, NoteOffEvent, MetaEvent, AbstractEvent
 
 
 class Track(list):
@@ -26,7 +26,13 @@ class Track(list):
             relative: bool - whether or not ticks are relative or absolute
         '''
         self._relative = relative
-        super(Track, self).__init__(event.copy() for event in events)
+        super(Track, self).__init__(self.__assert_event(event.copy())
+                                    for event in events)
+    
+    def __assert_event(self, event):
+        assert (isinstance(event, AbstractEvent),
+                "Non-event passed to Track constructor")
+        return event
 
     @property
     def length(self):
@@ -75,6 +81,31 @@ class Track(list):
         combined = Track(events=sorted(combined, key=lambda x: x.tick), relative=False)
         combined.relative = self.relative
         return combined
+    
+    def map(self, f, attr=None):
+        '''
+        Map a function that operates on events over the track, optionally apply
+        to event attributes
+        If attr is not passed, f must return an Event. Otherwise, it is assumed
+        f returns a value to assign to the specified attribute
+        Params:
+            f: function(x: event) - function that either returns an Event or a
+                    value to assign to the specified attr
+            Optional:
+            attr: string - attribute/property of an Event that f assigns to. If
+                not supplied, f is assumed to return an Event object
+            
+        Returns:
+            Copy of Track object with f applied to all events
+        '''
+        if attr is not None:
+            copy = self.copy()
+            for event in copy:
+                if hasattr(event, attr):
+                    setattr(event, attr, f(event))
+            return copy
+        return Track(events=(f(event.copy()) for event in self),
+                     relative=self.relative)
 
 
 
@@ -197,8 +228,14 @@ class Pattern(list):
         self.format = fmt
         self._resolution = resolution
         self._relative = relative
-        super(Pattern, self).__init__(track.copy() for track in tracks)
+        super(Pattern, self).__init__(self.__assert_track(track.copy())
+                                      for track in tracks)
         assert ((fmt == 0 and len(self) <= 1) or (len(self) >= 1))
+    
+    def __assert_track(self, track):
+        assert (isinstance(track, Track),
+                "Non-Track passed to Pattern constructor")
+        return track
 
     @property
     def relative(self):
