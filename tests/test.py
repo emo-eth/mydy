@@ -14,7 +14,7 @@ from mydy.Constants import MAX_TICK_RESOLUTION
 class TestUtil(unittest.TestCase):
     def test_symmetry(self):
         for _ in range(1000):
-            test = random.randint(0, 2 ** (7 * 4) - 1)
+            test = random.randint(2 ** 16, 2 ** (64) - 1)
             self.assertEqual(test, Util.read_varlen(
                 iter(Util.write_varlen(test))))
 
@@ -103,6 +103,13 @@ class TestTracks(unittest.TestCase):
         for event in track3:
             event.tick = int(event.tick)
         self.assertAlmostEqual(track1, track3)
+    
+    def test_add_tracks(self):
+        pattern = FileIO.read_midifile('mary.mid')
+        track1 = pattern[1]
+        copy = track1.copy()
+        self.assertTrue(len(track1) * 2 - 1 == len(track1 + track1[:-1]))
+        self.assertNotEqual(track1, track1 + copy)
 
 
 class TestPattern(unittest.TestCase):

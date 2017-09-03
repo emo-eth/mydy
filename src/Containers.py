@@ -24,7 +24,7 @@ class Track(list):
             relative: bool - whether or not ticks are relative or absolute
         '''
         self.relative = relative
-        super(Track, self).__init__(events)
+        super(Track, self).__init__(event.copy() for event in events)
 
     def make_ticks_abs(self):
         if (self.relative):
@@ -112,7 +112,7 @@ class Pattern(list):
         self.format = fmt
         self._resolution = resolution
         self.relative = relative
-        super(Pattern, self).__init__(tracks)
+        super(Pattern, self).__init__(track.copy() for track in tracks)
         assert ((fmt == 0 and len(self) <= 1) or (len(self) >= 1))
 
     @property
