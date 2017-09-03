@@ -5,6 +5,7 @@ TODO: integer multiplication should extend a track/pattern, as with lists
 TODO: respect pattern format, ignore header track when performing vectorized operations
     TODO: see if getitem makes weirdness happen with slicing
 TODO: setter for relative ticks
+TODO: pow operator
 '''
 from pprint import pformat, pprint
 from .Constants import MAX_TICK_RESOLUTION
@@ -61,30 +62,26 @@ class Track(list):
         if isinstance(o, int):
             return Track(map(lambda x: x + o, self), self.relative)
         elif isinstance(o, Track):
-            return self + o.copy()
-        else:
-            raise TypeError(
+            return self.copy() + o.copy()
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __sub__(self, o):
         if isinstance(o, int):
             return self + (-o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __rshift__(self, o):
         if isinstance(o, int):
             return Track(map(lambda x: x >> o, self), self.relative)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __lshift__(self, o):
         if isinstance(o, int):
             return self >> (-o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __mul__(self, o):
@@ -92,8 +89,7 @@ class Track(list):
             raise TypeError(f"multiplication factor must be greater than zero")
         elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
             return Track(map(lambda x: x * o, self), self.relative)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __truediv__(self, o):
@@ -101,8 +97,7 @@ class Track(list):
             raise TypeError(f"multiplication factor must be greater than zero")
         elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
             return self * (1 / o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
 
@@ -146,34 +141,30 @@ class Pattern(list):
             return Pattern(map(lambda x: x + o, self), self.resolution,
                            self.format, self.relative)
         elif isinstance(o, Pattern):
-            return self + o.copy()
+            return self.copy() + o.copy()
         elif isinstance(o, Track):
             # TODO: test this
             return self.copy().append(o.copy())
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __sub__(self, o):
         if isinstance(o, int):
             return self + (-o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __rshift__(self, o):
         if isinstance(o, int):
             return Pattern(map(lambda x: x >> o, self), self.resolution,
                            self.format, self.relative)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __lshift__(self, o):
         if isinstance(o, int):
             return self >> (-o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __mul__(self, o):
@@ -182,8 +173,7 @@ class Pattern(list):
         elif (isinstance(o, int) or isinstance(o, float)):
             return Pattern(map(lambda x: x * o, self), self.resolution,
                            self.format, self.relative)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __truediv__(self, o):
@@ -191,8 +181,7 @@ class Pattern(list):
             raise TypeError(f"multiplication factor must be greater than zero")
         elif (isinstance(o, int) or isinstance(o, float)):
             return self * (1 / o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __getitem__(self, item):

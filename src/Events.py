@@ -83,10 +83,8 @@ class AbstractEvent(metaclass=EventMetaclass):
     def __repr__(self):
         return self._baserepr()
 
-    def copy(self, **kw):
-        _kw = {'tick': self.tick, 'data': self.data.copy()}
-        _kw.update(kw)
-        return self.__class__(**_kw)
+    def copy(self):
+        return self.__class__(tick=self.tick, data=self.data.copy())
 
     def __add__(self, o):
         if isinstance(o, int):
@@ -96,9 +94,8 @@ class AbstractEvent(metaclass=EventMetaclass):
                 return new
             else:
                 return self.copy()
-        else:
-            raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+        raise TypeError(
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __radd__(self, o):
         return self.__add__(o)
@@ -106,8 +103,7 @@ class AbstractEvent(metaclass=EventMetaclass):
     def __sub__(self, o):
         if isinstance(o, int):
             return self + (-o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __rsub__(self, o):
@@ -122,15 +118,13 @@ class AbstractEvent(metaclass=EventMetaclass):
                 return new
             else:
                 return self.copy()
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __lshift__(self, o):
         if isinstance(o, int):
             return self >> (-o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __mul__(self, o):
@@ -141,8 +135,7 @@ class AbstractEvent(metaclass=EventMetaclass):
             new = self.copy()
             new.tick *= o
             return new
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __truediv__(self, o):
@@ -150,8 +143,7 @@ class AbstractEvent(metaclass=EventMetaclass):
             raise TypeError(f"multiplication factor must be greater than zero")
         elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
             return self * (1 / o)
-        else:
-            raise TypeError(
+        raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
 
@@ -175,11 +167,8 @@ class Event(AbstractEvent):
         new.data = list(map(quantize, self.data))
         return new
 
-    def copy(self, **kw):
-        _kw = {'channel': self.channel,
-               'tick': self.tick, 'data': self.data.copy()}
-        _kw.update(kw)
-        return self.__class__(**_kw)
+    def copy(self):
+        return self.__class__(channel=self.channel, tick=self.tick, data=self.data.copy())
 
     def __lt__(self, other):
         return (super(Event, self).__lt__(other) or
@@ -218,11 +207,9 @@ class MetaEvent(AbstractEvent):
     def is_event(cls, status):
         return (status == cls.status)
 
-    def copy(self, **kw):
-        _kw = {'metacommand': self.metacommand,
-               'tick': self.tick, 'data': self.data.copy()}
-        _kw.update(kw)
-        return self.__class__(**_kw)
+    def copy(self):
+        return self.__class__(metacommand=self.metacommand, tick=self.tick,
+                              data=self.data.copy())
 
 
 class NoteEvent(Event):
