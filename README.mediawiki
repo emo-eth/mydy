@@ -1,36 +1,27 @@
-<a href="https://travis-ci.org/vishnubob/python-midi"><img src="https://travis-ci.org/vishnubob/python-midi.svg?branch=master" alt='Build Statis' /></a>
-<a href='https://coveralls.io/github/vishnubob/python-midi?branch=master'><img src='https://coveralls.io/repos/vishnubob/python-midi/badge.svg?branch=master&service=github' alt='Coverage Status' /></a>
+=Mydy=
 
-=Python MIDI=
+Mydy is a Python MIDI IO library, and a fork of <a href="https://github.com/vishnubob/python-midi">python-midi</a> by Giles Hall. Mydy is specifically re-written for Python 3, and does not support Python 2.
 
-Python, for all its amazing ability out of the box, does not provide you with
-an easy means to manipulate MIDI data.  There are probably about ten different
-python packages out there that accomplish some part of this goal, but there is
-nothing that is totally comprehensive.
-
-This toolkit aims to fulfill this goal.  In particular, it strives to provide a
-high level framework that is independent of hardware.  It tries to offer a
-reasonable object granularity to make MIDI streams a painless thing to
-manipulate, sequence, record, and playback.  It's important to have a good
-concept of time, and the event framework provides automatic hooks so you don't
-have to calculate ticks to wall clock, for example. 
-
-This MIDI Python toolkit represents about two years of scattered work.  If you
-are someone like me, who has spent a long time looking for a Python MIDI
-framework, than this might be a good fit.  It's not perfect, but it has a large
-feature set to offer.
+Mydy supports vectorized operations on MIDI Patterns, Tracks and Events by overloading builtin operators.
 
 ==Features==
 
+Features specific to Mydy:
+
+* Designed for Python 3
+* Transpose patterns/tracks/events using the <code>+ and -</code> operators
+* Change the speed of patterns/tracks/events using the <code>* and /</code> operators
+* Change velocity of patterns/tracks/events using the <code>>> and <<</code> operators
+
+Features from the base python-midi:
+
 * High level class types that represent individual MIDI events.
 * A multi-track aware container, that allows you to manage your MIDI events.
-* A tempo map that actively keeps track of tempo changes within a track.
 * A reader and writer, so you can read and write your MIDI tracks to disk.
 
 ==Installation==
 
-Follow the [http://docs.python.org/2/install/index.html normal procedure for Python module installation]:
-
+After cloning the directory, 
 <pre>
 python setup.py install
 </pre>
@@ -160,65 +151,11 @@ pattern = midi.read_midifile("example.mid")
 print pattern
 </pre>
 
-==Sequencer==
-
-If you use this toolkit under Linux, you can take advantage of ALSA's
-sequencer.  There is a SWIG wrapper and a high level sequencer interface that
-hides the ALSA details as best it can.  This sequencer understands the higher
-level Event framework, and will convert these Events to structures accessible
-to ALSA.  It tries to do as much as the hard work for you as possible, including
-adjusting the queue for tempo changes during playback.  You can also record
-MIDI events, and with the right set of calls, the ALSA sequencer will timestamp
-your MIDI tracks at the moment the event triggers an OS hardware interrupt.
-The timing is extremely accurate, even though you are using Python to manage
-it.
-
-I am extremely interested in supporting OS-X and Win32 sequencers as well, but
-I need platform expert who can help me.  Are you that person?  Please contact
-me if you would like to help.
-
-===Scripts for Sequencer===
-
-To examine the hardware and software MIDI devices attached to your
-system, run the mididumphw.py script.
-
-<pre>
-$ mididumphw.py
-] client(20) "OP-1 Midi Device"
-]   port(0) [r, w, sender, receiver] "OP-1 Midi Device MIDI 1"
-] client(129) "__sequencer__"
-] client(14) "Midi Through"
-]   port(0) [r, w, sender, receiver] "Midi Through Port-0"
-] client(0) "System"
-]   port(1) [r, sender] "Announce"
-]   port(0) [r, w, sender] "Timer"
-] client(128) "FLUID Synth (6438)"
-]   port(0) [w, receiver] "Synth input port (6438:0)"
-</pre>
-
-In the case shown, [http://qsynth.sourceforge.net/qsynth-index.html qsynth]
-is running (client 128), and a hardware synthesizer is attached via
-USB (client 20).
-
-To play the example MIDI file, run the midiplay.py script.
-
-<pre>
-midiplay.py 128 0 mary.mid
-</pre>
-
 ==Website, support, bug tracking, development etc.==
 
 You can find the latest code on the home page:
-https://github.com/vishnubob/python-midi/
+https://github.com/jameswenzel/mydy/
 
 You can also check for known issues and submit new ones to the
-tracker: https://github.com/vishnubob/python-midi/issues/
+tracker: https://github.com/jameswenzel/mydy/issues/
 
-==Thanks==
-
-I originally wrote this to drive the electro-mechanical instruments of Ensemble
-Robot, which is a Boston based group of artists, programmers, and engineers.
-This API, however, has applications beyond controlling this equipment.  For
-more information about Ensemble Robot, please visit:
-
-http://www.ensemblerobot.org/
