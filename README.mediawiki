@@ -12,6 +12,7 @@ Features specific to Mydy:
 * Transpose patterns/tracks/events using the <code>+ and -</code> operators
 * Change the speed of patterns/tracks/events using the <code>* and /</code> operators
 * Change velocity of patterns/tracks/events using the <code>>> and <<</code> operators
+* Extend a track with copies of itself using the <code>**</code> operator
 
 Features from the base python-midi:
 
