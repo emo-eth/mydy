@@ -105,19 +105,25 @@ class TestTracks(unittest.TestCase):
         self.assertAlmostEqual(track1, track3)
     
     def test_pow_tracks(self):
-        '''Test that tracks support integer and float power operations'''
+        '''Tracks support integer and float power operations'''
         pattern = FileIO.read_midifile('sotw.mid')
         track = pattern[0]
         self.assertTrue(track.length * 2 == (track ** 2).length)
+        track42 = track ** 4.2
+        self.assertTrue(track.length * 4.2 == (track ** 4.2).length)
+        self.assertTrue(int(track.length * 4.2) == int((track ** 4.2).length))
     
     def test_add_tracks(self):
+        '''Tracks can be added together to create a new object'''
         pattern = FileIO.read_midifile('mary.mid')
         track1 = pattern[1]
         copy = track1.copy()
         self.assertTrue(len(track1) * 2 - 1 == len(track1 + track1[:-1]))
-        self.assertTrue(track1[1] == copy[1] and track1[1] is not copy[1])
+        combined = track1 + copy
+        self.assertTrue(track1[1] == combined[1] and track1[1] is not combined[1])
     
     def test_length_and_relative(self):
+        '''Length property works with both relative and absolute ticks.'''
         pattern = FileIO.read_midifile('mary.mid')
         self.assertEqual(pattern[0].length, 1)
         running_tick = 0
@@ -129,8 +135,9 @@ class TestTracks(unittest.TestCase):
         # print(abscopy)
         self.assertEqual(running_tick, abscopy.length)
 
-    
     def test_relative(self):
+        '''Test that relative setter and make_ticks_xxx methods work as expected,
+        ie methods return copies and setter modifies in place '''
         pattern = FileIO.read_midifile('mary.mid')
         track = pattern[1]
         abscopy = track.copy()

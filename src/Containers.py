@@ -32,10 +32,7 @@ class Track(list):
     def length(self):
         '''Compute the length of a track in ticks'''
         if self.relative:
-            running_tick = 0
-            for event in self:
-                running_tick += event.tick
-            return running_tick
+            return reduce(lambda curr, event: curr + event.tick, self, 0)
         return 0 if not len(self) else self[-1].tick
 
     @property
@@ -130,12 +127,12 @@ class Track(list):
             f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __pow__(self, o):
-        self.assert 0 < o, "Extension power must be greater than zero"
+        assert 0 < o, "Extension power must be greater than zero"
         if not (isinstance(o, int) or isinstance(o, float)):
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
         # compute the length of the track in ticks
-        length = reduce(lambda curr, event: curr + event.tick, self, 0)
+        length = self.length 
         # grab the end-of-track-event
         end_of_track = self[-1]
         # grab everything but the end-of-track-event
@@ -147,7 +144,7 @@ class Track(list):
         # add body of event for whole
         for _ in range(1, int(o)):
             new += body
-        # decide if we're extending by a float factor and add fractional bit on the end
+        # decide if we're extending by a float factor, add fraction to the end
         cutoff = length * (o % 1)
         if cutoff:
             # keep track of absolute tick position and which notes are on
@@ -163,11 +160,14 @@ class Track(list):
                     except KeyError:
                         pass
                 if pos > cutoff:
+                    tick = cutoff - (pos - event.tick)
                     new += body[:i]
                     for note in on:
-                        tick = cutoff - (pos - event.tick)
                         new.append(NoteOffEvent(
                             tick=tick, pitch=note, velocity=0))
+                        # TODO: force relative ticks
+                        # since these are relative ticks, set to 0
+                        tick = 0
                     break
         new.append(end_of_track)
         return new
