@@ -2,9 +2,10 @@
 Container classes for MIDI Patterns and Tracks
 
 TODO: integer multiplication should extend a track/pattern, as with lists
-TODO: respect pattern format, ignore header track when performing vectorized operations
+TODO: respect pattern format, ignore header track when performing vectorized
+    operations
     TODO: see if getitem makes weirdness happen with slicing
-TODO: setter for relative ticks
+TODO: should tracks care if they have relative ticks or not?
 '''
 from functools import reduce
 from pprint import pformat, pprint
@@ -24,24 +25,49 @@ class Track(list):
             events: iterable - collection of events to include in the track
             relative: bool - whether or not ticks are relative or absolute
         '''
-        self.relative = relative
+        self._relative = relative
         super(Track, self).__init__(event.copy() for event in events)
 
-    def make_ticks_abs(self):
-        if (self.relative):
-            self.relative = False
+    @property
+    def length(self):
+        '''Compute the length of a track in ticks'''
+        if self.relative:
             running_tick = 0
             for event in self:
-                event.tick += running_tick
-                running_tick = event.tick
+                running_tick += event.tick
+            return running_tick
+        return 0 if not len(self) else self[-1].tick
+
+    @property
+    def relative(self):
+        return self._relative
+
+    @relative.setter
+    def relative(self, val):
+        '''Set the relative flag and mutate events to have relative ticks'''
+        if val != self._relative:
+            self._relative = val
+            running_tick = 0
+            if self._relative:
+                for event in self:
+                    event.tick -= running_tick
+                    running_tick += event.tick
+            else:
+                for event in self:
+                    event.tick += running_tick
+                    running_tick = event.tick
+
+    def make_ticks_abs(self):
+        '''Return a copy of the track with absolute ticks'''
+        copy = self.copy()
+        copy.relative = False
+        return copy
 
     def make_ticks_rel(self):
-        if (not self.relative):
-            self.relative = True
-            running_tick = 0
-            for event in self:
-                event.tick -= running_tick
-                running_tick += event.tick
+        '''Returns a copy of the track with relative ticks'''
+        copy = self.copy()
+        copy.relative = True
+        return copy
 
     def copy(self):
         return Track((event.copy() for event in self), self.relative)
@@ -54,7 +80,7 @@ class Track(list):
             return super(Track, self).__getitem__(item)
 
     def __repr__(self):
-        return "mydy.Track(\\\n  %s)" % (pformat(list(self)).replace('\n', '\n  '), )
+        return "mydy.Track(relative: %s\\\n  %s)" % (self.relative, pformat(list(self)).replace('\n', '\n  '), )
 
     def __eq__(self, o):
         return (super(Track, self).__eq__(o) and self.relative == o.relative)
@@ -67,25 +93,25 @@ class Track(list):
             copy.extend(o.copy())
             return copy
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __sub__(self, o):
         if isinstance(o, int):
             return self + (-o)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __rshift__(self, o):
         if isinstance(o, int):
             return Track(map(lambda x: x >> o, self), self.relative)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __lshift__(self, o):
         if isinstance(o, int):
             return self >> (-o)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __mul__(self, o):
         if o <= 0:
@@ -93,7 +119,7 @@ class Track(list):
         elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
             return Track(map(lambda x: x * o, self), self.relative)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __truediv__(self, o):
         if o <= 0:
@@ -101,9 +127,10 @@ class Track(list):
         elif (isinstance(o, int) or isinstance(o, float)) and o > 0:
             return self * (1 / o)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __pow__(self, o):
+        self.assert 0 < o, "Extension power must be greater than zero"
         if not (isinstance(o, int) or isinstance(o, float)):
             raise TypeError(
                 f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
@@ -114,10 +141,11 @@ class Track(list):
         # grab everything but the end-of-track-event
         # this is the track we will be adding onto our returned track
         new = self[:-1]
-        body = Track(events=filter(lambda x: not MetaEvent.is_event(x.status), new))
+        body = Track(events=filter(
+            lambda x: not MetaEvent.is_event(x.status), new))
         # this will contain our new track
         # add body of event for whole
-        for i in range(int(o)):
+        for _ in range(1, int(o)):
             new += body
         # decide if we're extending by a float factor and add fractional bit on the end
         cutoff = length * (o % 1)
@@ -138,7 +166,8 @@ class Track(list):
                     new += body[:i]
                     for note in on:
                         tick = cutoff - (pos - event.tick)
-                        new.append(NoteOffEvent(tick=tick, pitch=note, velocity=0))
+                        new.append(NoteOffEvent(
+                            tick=tick, pitch=note, velocity=0))
                     break
         new.append(end_of_track)
         return new
@@ -152,9 +181,23 @@ class Pattern(list):
     def __init__(self, tracks=[], resolution=220, fmt=1, relative=True):
         self.format = fmt
         self._resolution = resolution
-        self.relative = relative
+        self._relative = relative
         super(Pattern, self).__init__(track.copy() for track in tracks)
         assert ((fmt == 0 and len(self) <= 1) or (len(self) >= 1))
+
+    @property
+    def relative(self):
+        return self._relative
+
+    @relative.setter
+    def relative(self, val):
+        if (val != self.relative):
+            self._relative = val
+            for track in self:
+                if val:
+                    track._make_ticks_rel()
+                else:
+                    track._make_ticks_abs()
 
     @property
     def resolution(self):
@@ -192,31 +235,30 @@ class Pattern(list):
             copy.extend(o.copy())
             return copy
         elif isinstance(o, Track):
-            # TODO: test this
             copy = self.copy()
             copy.append(o.copy())
             return copy
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __sub__(self, o):
         if isinstance(o, int):
             return self + (-o)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __rshift__(self, o):
         if isinstance(o, int):
             return Pattern(map(lambda x: x >> o, self), self.resolution,
                            self.format, self.relative)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __lshift__(self, o):
         if isinstance(o, int):
             return self >> (-o)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __mul__(self, o):
         if o <= 0:
@@ -225,7 +267,7 @@ class Pattern(list):
             return Pattern(map(lambda x: x * o, self), self.resolution,
                            self.format, self.relative)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __truediv__(self, o):
         if o <= 0:
@@ -233,7 +275,7 @@ class Pattern(list):
         elif (isinstance(o, int) or isinstance(o, float)):
             return self * (1 / o)
         raise TypeError(
-                f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
+            f"unsupported operand type(s) for +: '{self.__class__}' and '{type(o)}'")
 
     def __getitem__(self, item):
         if isinstance(item, slice):

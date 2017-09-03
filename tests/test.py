@@ -104,12 +104,43 @@ class TestTracks(unittest.TestCase):
             event.tick = int(event.tick)
         self.assertAlmostEqual(track1, track3)
     
+    def test_pow_tracks(self):
+        '''Test that tracks support integer and float power operations'''
+        pattern = FileIO.read_midifile('sotw.mid')
+        track = pattern[0]
+        self.assertTrue(track.length * 2 == (track ** 2).length)
+    
     def test_add_tracks(self):
         pattern = FileIO.read_midifile('mary.mid')
         track1 = pattern[1]
         copy = track1.copy()
         self.assertTrue(len(track1) * 2 - 1 == len(track1 + track1[:-1]))
-        self.assertNotEqual(track1, track1 + copy)
+        self.assertTrue(track1[1] == copy[1] and track1[1] is not copy[1])
+    
+    def test_length_and_relative(self):
+        pattern = FileIO.read_midifile('mary.mid')
+        self.assertEqual(pattern[0].length, 1)
+        running_tick = 0
+        for event in pattern[1]:
+            running_tick += event.tick
+        self.assertEqual(running_tick, pattern[1].length)
+        abscopy = pattern[1].copy()
+        abscopy.relative = False
+        # print(abscopy)
+        self.assertEqual(running_tick, abscopy.length)
+
+    
+    def test_relative(self):
+        pattern = FileIO.read_midifile('mary.mid')
+        track = pattern[1]
+        abscopy = track.copy()
+        abscopy2 = abscopy.make_ticks_abs()
+        self.assertTrue(abscopy is not abscopy2)
+        self.assertNotEqual(abscopy, abscopy2)
+        abscopy.relative = False
+        self.assertEqual(abscopy, abscopy2)
+        relcopy = abscopy.make_ticks_rel()
+        self.assertEqual(track, relcopy)
 
 
 class TestPattern(unittest.TestCase):
@@ -158,3 +189,15 @@ class TestPattern(unittest.TestCase):
                 event.tick = int(event.tick + .5)
         read = FileIO.read_midifile('test.mid')
         self.assertEqual(orig, read)
+    
+    def test_add_patterns(self):
+        pattern = FileIO.read_midifile('mary.mid')
+        copy = pattern.copy()
+        self.assertTrue(len(pattern) * 2 == len(pattern + copy))
+        self.assertTrue(pattern == copy and pattern is not copy)
+        for track, trackcopy in zip(pattern, copy):
+            self.assertEqual(track, trackcopy)
+            self.assertFalse(track is trackcopy)
+            for event, eventcopy in zip(track, trackcopy):
+                self.assertEqual(event, eventcopy)
+                self.assertFalse(event is eventcopy)
