@@ -13,6 +13,7 @@ Features specific to Mydy:
 * Change the speed of patterns/tracks/events using the <code>* and /</code> operators
 * Change velocity of patterns/tracks/events using the <code>>> and <<</code> operators
 * Extend a track with copies of itself using the <code>**</code> operator
+* Map functions of events over tracks with the <code>map</code> method
 
 Features from the base python-midi:
 

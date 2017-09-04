@@ -167,7 +167,7 @@ class TestTracks(unittest.TestCase):
         merged = track.merge(shifted)
         self.assertTrue(track.merge(shifted).length == track.length + 100)
     
-    def test_map(self):
+    def test_map_attr(self):
         # Map supports optional attr; attrs that are Event-specific
         pattern = FileIO.read_midifile('mary.mid')
         track = pattern[1]
@@ -183,6 +183,20 @@ class TestTracks(unittest.TestCase):
         self.assertEqual(track[5].velocity, 127)
         track = pattern[1].make_ticks_abs().map(lambda e: e.tick ** 2, 'tick')
         self.assertEqual(pattern[1].length ** 2, track.length)
+    
+    def test_map_event_type(self):
+        pattern = FileIO.read_midifile('mary.mid')
+        track = pattern[1]
+        print(track)
+        track = track.map(lambda e: 69, 'tick', Events.ControlChangeEvent)
+        self.assertEqual(track[0].tick, 69)
+        def change_tick(event):
+            event.tick = 0
+            return event
+        track = pattern[1].map(change_tick)
+        self.assertEqual(track.length, 0)
+        track = pattern[1].map(change_tick, event_type=Events.NoteOnEvent)
+        self.assertEqual(track.length, 1)
 
 
 class TestPattern(unittest.TestCase):

@@ -6,12 +6,12 @@ TODO: respect pattern format, ignore header track when performing vectorized
     operations
     TODO: see if getitem makes weirdness happen with slicing
 TODO: should tracks care if they have relative ticks or not?
+TODO: implement pow and map methods for pattern
 '''
 from functools import reduce
 from pprint import pformat, pprint
 from .Constants import MAX_TICK_RESOLUTION
 from .Events import NoteOnEvent, NoteOffEvent, MetaEvent, AbstractEvent
-
 
 class Track(list):
     '''
@@ -73,41 +73,51 @@ class Track(list):
         return copy
 
     def merge(self, o):
-        '''Merge two MIDI tracks so they are a single MIDI track'''
+        '''Merge two MIDI tracks, interleaving their events.'''
         assert isinstance(o, Track), "Can only merge with other tracks"
         abself = self.make_ticks_abs()
         abso = o.make_ticks_abs()
         combined = abself + abso
-        combined = Track(events=sorted(combined, key=lambda x: x.tick), relative=False)
+        combined = Track(events=sorted(combined, key=lambda x: x.tick),
+                         relative=False)
         combined.relative = self.relative
         return combined
     
-    def map(self, f, attr=None):
+    def map(self, f, attr=None, event_type=None):
         '''
         Map a function that operates on events over the track, optionally apply
         to event attributes
         If attr is not passed, f must return an Event. Otherwise, it is assumed
         f returns a value to assign to the specified attribute
         Params:
-            f: function(x: event) - function that either returns an Event or a
-                    value to assign to the specified attr
+            f: function(x: event) - function that takes a single event as its
+                    only argument, and either returns an Event or a value to
+                    assign to the specified attr
             Optional:
             attr: string - attribute/property of an Event that f assigns to. If
                 not supplied, f is assumed to return an Event object
             
         Returns:
-            Copy of Track object with f applied to all events
+            A new Track object with f applied to all Events
         '''
         if attr is not None:
             copy = self.copy()
             for event in copy:
-                if hasattr(event, attr):
+                if ((event_type is None or isinstance(event, event_type))
+                     and hasattr(event, attr)):
                     setattr(event, attr, f(event))
             return copy
-        return Track(events=(f(event.copy()) for event in self),
+        return Track(events=(f(event.copy())
+                             if (event_type is None
+                                 or isinstance(event, event_type))
+                             else event.copy() for event in self),
                      relative=self.relative)
-
-
+    
+    def filter(self, test):
+        '''Filter events from a track according to a test predicate.
+        Returns a new Track with only events that satisfy the test.'''
+        return Track((event for event in self if test(event)),
+                     relative=self.relative)
 
     def copy(self):
         return Track((event.copy() for event in self), self.relative)
@@ -185,8 +195,7 @@ class Track(list):
         # grab everything but the end-of-track-event
         # this is the track we will be adding onto our returned track
         new = copy[:-1]
-        body = Track(events=filter(
-            lambda x: not MetaEvent.is_event(x.status), new))
+        body = new.filter(lambda x: not MetaEvent.is_event(x.status))
         # create whole copies of the body
         for _ in range(1, int(o)):
             new += body
