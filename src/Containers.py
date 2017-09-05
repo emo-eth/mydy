@@ -26,20 +26,23 @@ class Track(list):
             relative: bool - whether or not ticks are relative or absolute
         '''
         self._relative = relative
+        self._length = None
         super(Track, self).__init__(self.__assert_event(event.copy())
                                     for event in events)
     
     def __assert_event(self, event):
-        assert (isinstance(event, AbstractEvent),
-                "Non-event passed to Track constructor")
+        assert isinstance(event, AbstractEvent), "Non-event passed to Track constructor"
         return event
 
     @property
     def length(self):
         '''Compute the length of a track in ticks'''
-        if self.relative:
-            return reduce(lambda curr, event: curr + event.tick, self, 0)
-        return 0 if not len(self) else self[-1].tick
+        if self._length is None:
+            if self.relative:
+                self._length = reduce(lambda curr, event: curr + event.tick, self, 0)
+            else:
+                self._length = 0 if not len(self) else self[-1].tick
+        return self._length
 
     @property
     def relative(self):
@@ -123,6 +126,7 @@ class Track(list):
         return Track((event.copy() for event in self), self.relative)
 
     def __getitem__(self, item):
+        # TODO: test and fix this.
         if isinstance(item, slice):
             indices = item.indices(len(self))
             return Track((super(Track, self).__getitem__(i).copy() for i in range(*indices)))
@@ -135,7 +139,8 @@ class Track(list):
     def __eq__(self, o):
         return (super(Track, self).__eq__(o) and self.relative == o.relative)
 
-    def __add__(self, o):
+    def __add__(self, o):f
+        # TODO: figure out trackend events
         if isinstance(o, int):
             return Track(map(lambda x: x + o, self), self.relative)
         elif isinstance(o, Track):
