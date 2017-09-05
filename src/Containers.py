@@ -139,7 +139,7 @@ class Track(list):
     def __eq__(self, o):
         return (super(Track, self).__eq__(o) and self.relative == o.relative)
 
-    def __add__(self, o):f
+    def __add__(self, o):
         # TODO: figure out trackend events
         if isinstance(o, int):
             return Track(map(lambda x: x + o, self), self.relative)
