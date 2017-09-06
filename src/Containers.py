@@ -216,13 +216,6 @@ class Track(list):
             on = set()
             for i, event in enumerate(body):
                 pos += event.tick
-                if isinstance(event, NoteOnEvent):
-                    on.add(event.pitch)
-                elif isinstance(event, NoteOffEvent):
-                    try:
-                        on.remove(event.pitch)
-                    except KeyError:
-                        pass
                 if pos > cutoff:
                     tick = cutoff - (pos - event.tick)
                     new += body[:i]
@@ -232,6 +225,13 @@ class Track(list):
                         # since these are relative ticks, set to 0
                         tick = 0
                     break
+                if isinstance(event, NoteOnEvent):
+                    on.add(event.pitch)
+                elif isinstance(event, NoteOffEvent):
+                    try:
+                        on.remove(event.pitch)
+                    except KeyError:
+                        pass
         if end_of_track is not None:
             new.append(end_of_track)
         new.relative = self.relative
