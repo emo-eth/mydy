@@ -198,11 +198,12 @@ class Track(list):
         # grab the end-of-track-event
         if isinstance(copy[-1], EndOfTrackEvent):
             end_of_track = copy[-1]
+            # grab everything but the end-of-track-event
+            new = copy[:-1]
         else:
             end_of_track = None
-        # grab everything but the end-of-track-event
+            new = copy
         # this is the track we will be adding onto our returned track
-        new = copy[:-1]
         body = new.filter(lambda x: not MetaEvent.is_event(x.status))
         # create whole copies of the body
         for _ in range(1, int(o)):
