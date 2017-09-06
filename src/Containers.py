@@ -252,8 +252,8 @@ class Pattern(list):
         assert ((fmt == 0 and len(self) <= 1) or (len(self) >= 1))
     
     def __assert_track(self, track):
-        assert (isinstance(track, Track),
-                "Non-Track passed to Pattern constructor")
+        assert isinstance(track, Track), ("Non-Track passed to Pattern " +
+                                          "constructor")
         return track
 
     @property
