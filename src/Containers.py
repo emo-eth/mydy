@@ -11,7 +11,7 @@ TODO: implement pow and map methods for pattern
 from functools import reduce
 from pprint import pformat, pprint
 from .Constants import MAX_TICK_RESOLUTION
-from .Events import NoteOnEvent, NoteOffEvent, MetaEvent, AbstractEvent
+from .Events import NoteOnEvent, NoteOffEvent, MetaEvent, AbstractEvent, EndOfTrackEvent
 
 class Track(list):
     '''
@@ -196,7 +196,10 @@ class Track(list):
         length = self.length 
         copy = self.make_ticks_rel()
         # grab the end-of-track-event
-        end_of_track = copy[-1]
+        if isinstance(copy[-1], EndOfTrackEvent):
+            end_of_track = copy[-1]
+        else:
+            end_of_track = None
         # grab everything but the end-of-track-event
         # this is the track we will be adding onto our returned track
         new = copy[:-1]
@@ -228,7 +231,8 @@ class Track(list):
                         # since these are relative ticks, set to 0
                         tick = 0
                     break
-        new.append(end_of_track)
+        if end_of_track is not None:
+            new.append(end_of_track)
         new.relative = self.relative
         return new
 
