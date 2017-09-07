@@ -74,6 +74,17 @@ class Track(list):
         copy = self.copy()
         copy.relative = True
         return copy
+    
+    def truncate_ticks(self):
+        '''
+        Returns a copy of the track whose events have whole-number ticks.
+        Note that ticks are automatically truncated with the max resolution
+        when written to disk
+        '''
+        copy = self.copy()
+        for event in copy:
+            event.tick = int(event.tick + .5)
+        return copy
 
     def merge(self, o):
         '''Merge two MIDI tracks, interleaving their events.'''
