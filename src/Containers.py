@@ -155,9 +155,21 @@ class Track(list):
         if isinstance(o, int):
             return Track(map(lambda x: x + o, self), self.relative)
         elif isinstance(o, Track):
-            copy = self.copy()
+            # if self has an EndOfTrackEvent, grab it, and slice it out
+            eot = None
+            if len(self) and isinstance(self[-1], EndOfTrackEvent):
+                eot = self[-1]
+            if eot is None:
+                copy = self.copy()
+            else:
+                copy = self[:-1]
             ocopy = o.copy()
-            o.relative = self.relative
+            ocopy.relative = self.relative
+            # nudge ocopy by the tick value of the EOTEvent
+            if eot is not None and len(ocopy):
+                ocopy[0].tick += eot.tick
+            elif eot is not None and not len(ocopy):  # otherwise just append it
+                ocopy.append(eot)
             copy.extend(ocopy)
             return copy
         raise TypeError(

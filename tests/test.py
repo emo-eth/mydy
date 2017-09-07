@@ -16,6 +16,7 @@ Events = mydy.Events
 Containers = mydy.Containers
 MAX_TICK_RESOLUTION = mydy.Constants.MAX_TICK_RESOLUTION
 
+
 class TestUtil(unittest.TestCase):
     def test_symmetry(self):
         for _ in range(1000):
@@ -108,7 +109,7 @@ class TestTracks(unittest.TestCase):
         for event in track3:
             event.tick = int(event.tick)
         self.assertAlmostEqual(track1, track3)
-    
+
     def test_pow_tracks(self):
         '''Tracks support integer and float power operations'''
         pattern = FileIO.read_midifile('sotw.mid')
@@ -117,16 +118,17 @@ class TestTracks(unittest.TestCase):
         track42 = track ** 4.2
         self.assertTrue(track.length * 4.2 == (track ** 4.2).length)
         self.assertTrue(int(track.length * 4.2) == int((track ** 4.2).length))
-    
+
     def test_add_tracks(self):
         '''Tracks can be added together to create a new object'''
         pattern = FileIO.read_midifile('mary.mid')
         track1 = pattern[1]
         copy = track1.copy()
-        self.assertTrue(len(track1) * 2 - 1 == len(track1 + track1[:-1]))
+        self.assertTrue(len(track1) * 2 - 1 == len(track1 + track1))
         combined = track1 + copy
-        self.assertTrue(track1[1] == combined[1] and track1[1] is not combined[1])
-    
+        self.assertTrue(track1[1] == combined[1] and
+                        track1[1] is not combined[1])
+
     def test_length_and_relative(self):
         '''Length property works with both relative and absolute ticks.'''
         pattern = FileIO.read_midifile('mary.mid')
@@ -153,11 +155,12 @@ class TestTracks(unittest.TestCase):
         self.assertEqual(abscopy, abscopy2)
         relcopy = abscopy.make_ticks_rel()
         self.assertEqual(track, relcopy)
-    
+
     def test_merge(self):
         pattern = FileIO.read_midifile('mary.mid')
         track = pattern[1]
         # TODO: nudge/shift operator/method?
+
         def shift_100(event):
             event = event.copy()
             event.tick += 100
@@ -166,13 +169,14 @@ class TestTracks(unittest.TestCase):
         shifted[0].tick += 100
         merged = track.merge(shifted)
         self.assertTrue(track.merge(shifted).length == track.length + 100)
-    
+
     def test_map_attr(self):
         # Map supports optional attr; attrs that are Event-specific
         pattern = FileIO.read_midifile('mary.mid')
         track = pattern[1]
         track = track.map(lambda e: 0, 'tick')
         self.assertEqual(track.length, 0)
+
         def change_tick(event):
             event.tick = 0
             return event
@@ -183,13 +187,14 @@ class TestTracks(unittest.TestCase):
         self.assertEqual(track[5].velocity, 127)
         track = pattern[1].make_ticks_abs().map(lambda e: e.tick ** 2, 'tick')
         self.assertEqual(pattern[1].length ** 2, track.length)
-    
+
     def test_map_event_type(self):
         pattern = FileIO.read_midifile('mary.mid')
         track = pattern[1]
         print(track)
         track = track.map(lambda e: 69, 'tick', Events.ControlChangeEvent)
         self.assertEqual(track[0].tick, 69)
+
         def change_tick(event):
             event.tick = 0
             return event
@@ -245,7 +250,7 @@ class TestPattern(unittest.TestCase):
                 event.tick = int(event.tick + .5)
         read = FileIO.read_midifile('test.mid')
         self.assertEqual(orig, read)
-    
+
     def test_add_patterns(self):
         pattern = FileIO.read_midifile('mary.mid')
         copy = pattern.copy()
